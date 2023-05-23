@@ -9,6 +9,45 @@
 2. Unzip JSON files into data/, modify the config.json if needed.
 3. Preprocess?
 
+## Frontend Backend Interface
+
+1. POST /search 
+   
+Input: 
+
+```json
+    {
+        "type": "TYPE_STRING", // "Boolean" or "Ranked"
+        "query": "QUERY_STRING"
+    }
+```
+
+Output:
+
+```json
+    {
+        "code": 200, // or others as error code,
+        "msg": "MSG_STRING", // this is optional
+        "result": [
+            {
+                "url": "URL_STRING", 
+                "text": "TEXT_STRING", 
+                "timestamp": "TIMESTAMP_STRING"
+            },
+        ],
+        "summary": [ // this is optional
+            {
+                "text": "TEXT_STRING",
+                "related": ["RELATED_LINK_A", "RELATED_LINK_B"]
+            }
+        ],
+        "qa": { // this is optional
+            "answer": "ANSWER_TEXT",
+            "related": ["RELATED_LINK_A", "RELATED_LINK_B"]
+        }
+    }
+```
+
 ## Copy of the Project Requirement
 
 1. Dataset
