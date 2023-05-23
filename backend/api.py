@@ -38,7 +38,6 @@ def preprocess_worker(id, config):
     stopword_set = set(stopwords.words('english'))
     lemmatizer = WordNetLemmatizer()
 
-    show = True
     for file in files[files_low:files_high]:
         for line in open(os.path.join(jsonpath, file), 'r', encoding=config['encoding']):
             # parse json
@@ -47,16 +46,19 @@ def preprocess_worker(id, config):
             text:str = content['text']
             timestamp = datetime.fromisoformat(content['timestamp']).timestamp()
             c.execute("INSERT INTO documents VALUES (?, ?, ?, NULL)", (url, text, timestamp))
+            doc_id = c.lastrowid
 
             # split tokens, remove stop words, and stem
             words = word_tokenize(text.lower())
             words = [w for w in words if w not in stopword_set]
             # remove punctuation
             words = [w for w in words if w not in string.punctuation]
-            words = [lemmatizer.lemmatize(word) for word in words]
-            if show:
-                print(words)
-                show = False
+            words = set(lemmatizer.lemmatize(word) for word in words)
+            
+            # insert into inverted index
+            for word in words:
+                c.execute("INSERT INTO inverted_index VALUES (?, ?)", (word, doc_id))
+
         conn.commit()
 
 
