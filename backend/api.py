@@ -98,9 +98,20 @@ def fetch_index(c, text):
     c.execute("SELECT doc_id FROM inverted_index WHERE token=?", (token,))
     return c.fetchall()
 
-def fetch_doc(c, doc_id):
-    c.execute("SELECT url, text, timestamp FROM documents WHERE id=?", (doc_id,))
+def fetch_doc(c, id):
+    c.execute("SELECT url, text, timestamp FROM documents WHERE id=?", (id,))
     return c.fetchone()
+
+def fetch_doc_global_id(c, global_id, config):
+    """
+    Create a cursor and fetch the document with the given global_id = (owner, id)
+    """
+    dbpath = config['dbpath']
+    dbfile = os.path.join(dbpath, config['name'] + f"-{global_id[0]}.db")
+    with sqlite3.connect(dbfile) as conn:
+        conn = sqlite3.connect(dbfile)
+        c = conn.cursor()
+        return fetch_doc(c, global_id[1])
 
 def establish_db_connection(id, config):
     dbpath = config['dbpath']

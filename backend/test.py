@@ -19,3 +19,14 @@ if __name__ == "__main__":
     query = "bedroom"
     indices = fetch_index(c, query)
     print(f"Query: {query} : ({type(indices[0])}) {indices}")
+
+    for rank, i in enumerate(indices[:5]):
+        doc_id = i[0]
+        url, text, timestamp = fetch_doc(c, doc_id)
+        print(f"{rank}. {doc_id} : {url} : {datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y %H:%M:%S')} : {text[:200]}")
+    conn.close()
+
+    # test fetch global_id
+    global_id = (0, 18)
+    url, text, timestamp = fetch_doc_global_id(c, global_id, config)
+    print(f"{global_id} : {url} : {datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y %H:%M:%S')} : {text[:200]}")
