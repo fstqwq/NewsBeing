@@ -1,9 +1,10 @@
 {
-    "dataset" : "sample",
-    "database": "sample.db",
+    "name" : "sample",
     "attributes" : ["text", "timestamp", "url"],
     "encoding" : "utf-8",
-    "path" : "data/sample",
+    "dbpath": "data/db",
+    "jsonpath" : "data/sample",
+    "num_worker" : 1,
     "jsonfiles": [
         "c4-validation.00000-of-00001.json"
     ]

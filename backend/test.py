@@ -2,4 +2,7 @@ from api import *
 
 
 if __name__ == "__main__":
-    print("Hello World")
+    # read config from data/config-sample.json
+    with open('data/config-sample.json') as f:
+        config = json.load(f)
+    preprocess(config)
