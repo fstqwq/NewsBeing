@@ -7,7 +7,7 @@ import time
 with open('data/config.json') as f:
     config = json.load(f)
 
-path = config['path']
+path = config['jsonpath']
 p = multiprocessing.cpu_count()
 
 def parse(file):
@@ -17,11 +17,11 @@ def parse(file):
         url = json.loads(lines)['url']
         id = hash(url) % p
         if url in url_set[id]:
-            print('Duplicate url: ' + url)
+            print('duplicate url: ' + url)
             return None
         else:
             url_set[id].add(url)
-    print(f"Count = {sum(len(i) for i in url_set)}")
+    print(f"count = {sum(len(i) for i in url_set)}")
     return url_set
 
 def check(collections):
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     
     for i in result:
         if i is None:
-            print("FAIL: Duplicate url found in the same file")
+            print("FAIL: duplicate url found in the same file")
             exit(1)
 
     # reduce url_sets
