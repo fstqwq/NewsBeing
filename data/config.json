@@ -1,9 +1,10 @@
 {
-    "dataset" : "c4-realnewslike",
-    "database": "c4-realnewslike.db",
+    "name" : "c4-realnewslike",
     "attributes" : ["text", "timestamp", "url"],
     "encoding" : "utf-8",
-    "path" : "data/realnewslike",
+    "dbpath": "data/db",
+    "jsonpath" : "data/realnewslike",
+    "num_worker" : 16,
     "jsonfiles": [
         "c4-train.00000-of-00512.json",
         "c4-train.00001-of-00512.json",

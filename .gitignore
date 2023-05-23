@@ -1,2 +1,3 @@
 data/realnewslike/c4-*.json
-*/__pycache__/*
+data/db/*.db
+*/__pycache__
