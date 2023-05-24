@@ -8,9 +8,15 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
+from functools import lru_cache
 
 stopword_set = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
+punctuations = string.punctuation
+
+@lru_cache(maxsize=512)
+def lemmatize(word):
+    return lemmatizer.lemmatize(word)
 
 def test_db(config):
     # check the existence of db
@@ -22,22 +28,25 @@ def test_db(config):
         if not os.path.exists(dbfile):
             return None, None
         # count the number of documents
-        conn = sqlite3.connect(dbfile)
-        c = conn.cursor()
-        c.execute("SELECT COUNT(*) FROM documents")
-        num_doc = c.fetchone()[0]
-        sum += num_doc
-        c.execute("SELECT COUNT(*) FROM inverted_index")
-        num_token = c.fetchone()[0]
-        conn.close()
+        with sqlite3.connect(dbfile) as conn:
+            try:
+                c = conn.cursor()
+                c.execute("SELECT COUNT(*) FROM documents")
+                num_doc = c.fetchone()[0]
+                sum += num_doc
+                c.execute("SELECT COUNT(*) FROM inverted_index")
+                num_token = c.fetchone()[0]
+            except:
+                return None, None
     return sum, num_token
 
 def make_tokens(text):
     words = word_tokenize(text.lower())
-    words = [w for w in words if w not in stopword_set and w not in string.punctuation]
-    return [lemmatizer.lemmatize(w) for w in words]
+    words = [w for w in words if w not in stopword_set]
+    words = [w for w in words if w not in punctuations]
+    return [lemmatize(w) for w in words]
 
-def preprocess_worker(id, config):
+def preprocess_worker(id, config, gen_inverted_index = True):
     num_worker = config['num_worker']
 
     jsonpath = config['jsonpath']
@@ -52,9 +61,9 @@ def preprocess_worker(id, config):
     c = conn.cursor()
     c.execute('''CREATE TABLE documents
                 (url TEXT, text TEXT, timestamp INTEGER, id INTEGER PRIMARY KEY AUTOINCREMENT)''')
-    # create inverted index
-    c.execute('''CREATE TABLE inverted_index
-                (token TEXT, doc_id INTEGER)''')
+    if gen_inverted_index:
+        c.execute('''CREATE TABLE inverted_index
+                    (token TEXT, doc_id INTEGER)''')
     conn.commit()
 
     files = config['jsonfiles']
@@ -75,21 +84,21 @@ def preprocess_worker(id, config):
 
             tokens = set(make_tokens(text))
             
-            # insert into inverted index
-            for token in tokens:
-                c.execute("INSERT INTO inverted_index VALUES (?, ?)", (token, doc_id))
+            if gen_inverted_index:
+                for token in tokens:
+                    c.execute("INSERT INTO inverted_index VALUES (?, ?)", (token, doc_id))
 
         conn.commit()
 
 
 def preprocess(config):
-    print("Preprocessing...")
-    print("Config: " + str(config))
-    num_worker = config['num_worker']
-
+    print("Preprocessing... Config: " + str(config)[:100])
+    
     if not os.path.exists(config['dbpath']):
         os.mkdir(config['dbpath'])
 
+    num_worker = config['num_worker']
+    
     pool = multiprocessing.Pool(processes=num_worker)
     pool.starmap(preprocess_worker, [(i, config) for i in range(num_worker)])
 
