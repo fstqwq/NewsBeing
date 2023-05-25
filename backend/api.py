@@ -1,27 +1,24 @@
 import multiprocessing
-import string
 import sqlite3
 import json
 import os
 from datetime import datetime
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
-from functools import lru_cache
+from parse import *
+from typing import Tuple
 
-stopword_set = set(stopwords.words('english'))
-lemmatizer = WordNetLemmatizer()
-punctuations = string.punctuation
 
-@lru_cache(maxsize=512)
-def lemmatize(word):
-    return lemmatizer.lemmatize(word)
+def fetch_num_docs(c):
+    c.execute("SELECT COUNT(*) FROM documents")
+    return c.fetchone()[0]
+
+def fetch_num_inverted_indices(c):
+    c.execute("SELECT COUNT(*) FROM inverted_index")
+    return c.fetchone()[0]
 
 def test_db(config):
     # check the existence of db
     dbpath = config['dbpath']
-    sum = 0
+    num_doc = 0
     num_token = 0
     for i in range(config['num_worker']):
         dbfile = os.path.join(dbpath, config['name'] + f"-{i}.db")
@@ -32,19 +29,13 @@ def test_db(config):
             try:
                 c = conn.cursor()
                 c.execute("SELECT COUNT(*) FROM documents")
-                num_doc = c.fetchone()[0]
-                sum += num_doc
+                num_doc += c.fetchone()[0]
                 c.execute("SELECT COUNT(*) FROM inverted_index")
-                num_token = c.fetchone()[0]
+                num_token += c.fetchone()[0]
             except:
                 return None, None
-    return sum, num_token
+    return num_doc, num_token
 
-def make_tokens(text):
-    words = word_tokenize(text.lower())
-    words = [w for w in words if w not in stopword_set]
-    words = [w for w in words if w not in punctuations]
-    return [lemmatize(w) for w in words]
 
 def preprocess_worker(id, config, gen_inverted_index = True):
     num_worker = config['num_worker']
@@ -102,16 +93,24 @@ def preprocess(config):
     pool = multiprocessing.Pool(processes=num_worker)
     pool.starmap(preprocess_worker, [(i, config) for i in range(num_worker)])
 
-def fetch_index(c, text):
-    token = make_tokens(text)[0] 
+def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
+    c, tot = cc
     c.execute("SELECT doc_id FROM inverted_index WHERE token=?", (token,))
-    return c.fetchall()
+    return SortedIndex(c.fetchall(), tot, False)
 
-def fetch_doc(c, id):
+def fetch_index_by_text(text : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
+    c, tot = cc
+    tokens = make_tokens(text)
+    if len(tokens) == 0:
+        return SortedIndex([], tot, True) # all
+    else:
+        return fetch_index_by_token(tokens[0], cc)
+
+def fetch_doc(id : int, c : sqlite3.Cursor) -> Tuple[str, str, int]:
     c.execute("SELECT url, text, timestamp FROM documents WHERE id=?", (id,))
     return c.fetchone()
 
-def fetch_doc_global_id(c, global_id, config):
+def fetch_doc_global_id(global_id : tuple, config : dict) -> Tuple[str, str, int]:
     """
     Create a cursor and fetch the document with the given global_id = (owner, id)
     """
@@ -120,7 +119,36 @@ def fetch_doc_global_id(c, global_id, config):
     with sqlite3.connect(dbfile) as conn:
         conn = sqlite3.connect(dbfile)
         c = conn.cursor()
-        return fetch_doc(c, global_id[1])
+        return fetch_doc(global_id[1], c)
+
+
+def fetch_tree(expr, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
+    """
+    Fetch the tree of the given expression
+    """
+    if isinstance(expr, str):
+        return fetch_index_by_text(expr, cc)
+    assert(isinstance(expr, tuple))
+    if expr[0] == 'AND' or expr[0] == 'OR':
+        operands = [fetch_tree(e, cc) for e in expr[1]]
+        operands.sort(key=lambda x: len(x))
+        result = operands[0]
+        for i in range(1, len(operands)):
+            if expr[0] == 'AND':
+                result &= operands[i]
+            else:
+                result |= operands[i]
+        return result
+    elif expr[0] == 'NOT':
+        return ~fetch_tree(expr[1], cc)
+    raise Exception("Bad expression: " + str(expr))
+    
+
+def boolean_solve(expr : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
+    tree = boolean_parse(expr)
+    indices = fetch_tree(tree, cc)
+    return indices
+
 
 def establish_db_connection(id, config):
     dbpath = config['dbpath']

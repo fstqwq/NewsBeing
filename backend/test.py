@@ -1,5 +1,6 @@
 from api import *
 import time
+import parse
 
 if __name__ == "__main__":
     # read config from data/config-sample.json
@@ -18,18 +19,26 @@ if __name__ == "__main__":
     # start worker 0
     conn, c = establish_db_connection(0, config)
 
+    # get number of documents
+    num_docs = fetch_num_docs(c)
+    cc = (c, num_docs)
+
     # test query
     query = "bedroom"
-    indices = fetch_index(c, query)
+    indices = fetch_index_by_text(query, cc).extractall()
     print(f"Query: {query} : ({type(indices[0])}) {indices}")
 
-    for rank, i in enumerate(indices[:5]):
-        doc_id = i[0]
-        url, text, timestamp = fetch_doc(c, doc_id)
+    for rank, doc_id in enumerate(indices[:5]):  
+        url, text, timestamp = fetch_doc(doc_id, c)
         print(f"{rank}. {doc_id} : {url} : {datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y %H:%M:%S')} : {text[:200]}")
+    # test boolean
+    print(parse.boolean_parse("(car AND NOT rent) AND (house)"))
+    print(boolean_solve("(car AND NOT rent) AND (house)", cc))
     conn.close()
 
     # test fetch global_id
     global_id = (0, 18)
-    url, text, timestamp = fetch_doc_global_id(c, global_id, config)
+    url, text, timestamp = fetch_doc_global_id(global_id, config)
     print(f"{global_id} : {url} : {datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y %H:%M:%S')} : {text[:200]}")
+    
+    
