@@ -17,7 +17,8 @@ if __name__ == "__main__":
         print(f"Database found, {num_pages} pages in total, {num_tokens} index records in total.")
     
     # start worker 0
-    conn, c = establish_db_connection(0, config)
+    conn = establish_db_connection(0, config)
+    c = conn.cursor()
 
     # get number of documents
     num_docs = fetch_num_docs(c)

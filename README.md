@@ -3,11 +3,25 @@
 ... or New Bing SE.
 
 
-## Deployment
+## Requirement
+
+
+### Backend
+
+`Python`: 3.11
+```
+pip install -r requirements.txt
+python backend/init_nltk.py
+```
+
+### Frontend
+
+See `web/README.md`.
+
+## Database preparation
 
 1. Download Dataset: https://huggingface.co/datasets/allenai/c4/tree/main/realnewslike
 2. Unzip JSON files into data/, modify the config.json if needed.
-3. Preprocess?
 
 ## Frontend Backend Interface
 

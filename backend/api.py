@@ -3,8 +3,10 @@ import sqlite3
 import json
 import os
 from datetime import datetime
-from parse import *
 from typing import Tuple
+
+
+from .parse import *
 
 
 def fetch_num_docs(c):
@@ -110,6 +112,9 @@ def fetch_doc(id : int, c : sqlite3.Cursor) -> Tuple[str, str, int]:
     c.execute("SELECT url, text, timestamp FROM documents WHERE id=?", (id,))
     return c.fetchone()
 
+def doc_to_dict(doc : Tuple[str, str, int]) -> str:
+    return {'url': doc[0], 'text': doc[1], 'timestamp': datetime.fromtimestamp(doc[2]).isoformat()}
+
 def fetch_doc_global_id(global_id : tuple, config : dict) -> Tuple[str, str, int]:
     """
     Create a cursor and fetch the document with the given global_id = (owner, id)
@@ -154,5 +159,4 @@ def establish_db_connection(id, config):
     dbpath = config['dbpath']
     dbfile = os.path.join(dbpath, config['name'] + f"-{id}.db")
     conn = sqlite3.connect(dbfile)
-    c = conn.cursor()
-    return conn, c
+    return conn

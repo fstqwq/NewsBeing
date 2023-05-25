@@ -127,7 +127,19 @@ class SortedIndex:
             return len(self.array)
     
     def extractall(self):
+        return self.extract(len(self))
+    
+    def extract(self, max_count):
         if self.comp:
-            return [i for i in range(self.total) if i not in self.array]
+            j = 0
+            ret = []
+            for i in range(self.total):
+                if j < len(self.array) and i == self.array[j]:
+                    j += 1
+                else:
+                    ret.append(i)
+                    if len(ret) == max_count:
+                        break
+            return ret
         else:
-            return self.array
+            return self.array[:max_count]

@@ -6,6 +6,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from functools import lru_cache
+from .index import *
 
 stopword_set = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
