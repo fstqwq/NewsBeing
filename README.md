@@ -42,6 +42,7 @@ Output:
     {
         "code": 200, // or others as error code,
         "msg": "MSG_STRING", // this is optional
+        "cnt" : 114, // this is optional 
         "result": [
             {
                 "url": "URL_STRING", 

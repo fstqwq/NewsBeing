@@ -32,7 +32,7 @@ def search():
             return {
                 "code": 200,
                 "msg": "OK: count = len(indices)",
-                "result_count" : len(indices),
+                "cnt" : len(indices),
                 "result": [doc_to_dict(fetch_doc(doc_id, c)) for doc_id in indices.extract(5)]
             }
         
