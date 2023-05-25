@@ -34,6 +34,8 @@ if __name__ == "__main__":
     # test boolean
     print(parse.boolean_parse("(car AND NOT rent) AND (house)"))
     print(boolean_solve("(car AND NOT rent) AND (house)", cc))
+    print(boolean_solve("rent car discount", cc).extractall())
+    print(fetch_doc(boolean_solve("rent car discount", cc).extractall()[0], c))
     conn.close()
 
     # test fetch global_id

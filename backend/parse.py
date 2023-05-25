@@ -209,4 +209,4 @@ def boolean_parse(expr: str):
             raise ValueError('Illegeal expression')
         return operands[0]
     else:
-        return ('AND', [tokens])
+        return ('AND', tokens)
