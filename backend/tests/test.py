@@ -4,10 +4,10 @@ import time
 sys.path.append('.')
 from backend.api import *
 from backend import parse
+from config import *
 
 if __name__ == "__main__":
-    # read config from data/config-sample.json
-    with open('data/config-sample.json') as f:
+    with open(DATA_CONFIG_PATH) as f:
         config = json.load(f)
     num_pages, num_tokens = test_db(config)
     if num_pages is None or num_tokens is None:

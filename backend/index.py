@@ -58,7 +58,8 @@ class SortedIndex:
             self.array = array
         else:
             raise NotImplementedError()
-        assert(sorted(self.array))
+        for i in range(1, len(self.array)):
+            assert self.array[i-1] <= self.array[i]
         self.total = total
         self.comp = comp
     

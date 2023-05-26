@@ -1,0 +1,14 @@
+{
+    "name" : "sample-multi",
+    "attributes" : ["text", "timestamp", "url"],
+    "encoding" : "utf-8",
+    "dbpath": "data/db",
+    "jsonpath" : "data/sample-multi",
+    "num_worker" : 4,
+    "jsonfiles": [
+        "c4-train.00000-of-00512.json",
+        "c4-train.00001-of-00512.json",
+        "c4-train.00002-of-00512.json",
+        "c4-train.00003-of-00512.json"
+    ]
+}

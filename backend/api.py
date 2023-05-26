@@ -41,16 +41,9 @@ def test_db(config):
 
 def preprocess_worker(id, config, gen_inverted_index = True):
     num_worker = config['num_worker']
-
     jsonpath = config['jsonpath']
-    dbpath = config['dbpath']
-    dbfile = os.path.join(dbpath, config['name'] + f"-{id}.db")
 
-    if os.path.exists(dbfile):
-        print("Warning: removing " + dbfile)
-        os.remove(dbfile)
-
-    conn = sqlite3.connect(dbfile)
+    conn = establish_db_connection(id, config, False, True)
     c = conn.cursor()
     c.execute('''CREATE TABLE documents
                 (url TEXT, text TEXT, timestamp INTEGER, id INTEGER PRIMARY KEY AUTOINCREMENT)''')
@@ -82,6 +75,7 @@ def preprocess_worker(id, config, gen_inverted_index = True):
                     c.execute("INSERT INTO inverted_index VALUES (?, ?)", (token, doc_id))
 
         conn.commit()
+    conn.close()
 
 
 def preprocess(config):
@@ -115,7 +109,7 @@ def fetch_doc(id : int, c : sqlite3.Cursor) -> Tuple[str, str, int]:
 def doc_to_dict(doc : Tuple[str, str, int]) -> str:
     return {'url': doc[0], 'text': doc[1], 'timestamp': datetime.fromtimestamp(doc[2]).isoformat()}
 
-def fetch_doc_global_id(global_id : tuple, config : dict) -> Tuple[str, str, int]:
+def fetch_doc_global_id(global_id, config : dict) -> Tuple[str, str, int]:
     """
     Create a cursor and fetch the document with the given global_id = (owner, id)
     """
@@ -155,8 +149,35 @@ def boolean_solve(expr : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
     return indices
 
 
-def establish_db_connection(id, config):
+def establish_db_connection(id, config, readonly = True, remove_existed = False):
     dbpath = config['dbpath']
     dbfile = os.path.join(dbpath, config['name'] + f"-{id}.db")
-    conn = sqlite3.connect(dbfile)
+    if remove_existed and os.path.exists(dbfile):
+        os.remove(dbfile)
+    # make connection, default cache size is 65536, page size is 4096, isolation level is None
+    conn = sqlite3.connect(dbfile, isolation_level=None)
+    conn.execute("PRAGMA cache_size = 65536")
+    conn.execute("PRAGMA page_size = 4096")
+    if readonly:
+        conn.execute("PRAGMA temp_store = MEMORY")
+        conn.execute("PRAGMA journal_mode = OFF")
+        conn.execute("PRAGMA synchronous = OFF")
     return conn
+
+
+def worker(id, config, input, output):
+    with establish_db_connection(id, config) as conn:
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM inverted_index")
+        tot = c.fetchone()[0]        
+        while True:
+            task = input.get()
+            if task is None:
+                break
+            try:
+                ty, query = task
+                if ty == 'Boolean':
+                    indices = boolean_solve(query, (c, tot))
+                output.put(indices)
+            except Exception as e:
+                output.put(e)

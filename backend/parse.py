@@ -41,7 +41,7 @@ op_prec = {
 
 def boolean_parse(expr: str):
     tokens = split_tokens(expr)
-    if 'AND' in tokens or 'OR' in tokens or 'NOT' in tokens:
+    if 'AND' in tokens or 'OR' in tokens or 'NOT' in tokens or '(' in tokens or ')' in tokens:
         operands = []
         ops = []
         for token in tokens:
