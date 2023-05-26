@@ -68,9 +68,9 @@ class SortedIndex:
         else:
             return f'{self.array}'
     
-    def __ior__(self, other):
+    def __ior__(self, other : 'SortedIndex'):
         """
-        merge two sorted list inplace using operator AND
+        merge two sorted list inplace using operator OR
         warning: other may be modified.
         """
         if self.comp:
@@ -93,7 +93,7 @@ class SortedIndex:
         return self
 
 
-    def __iand__(self, other):
+    def __iand__(self, other : 'SortedIndex'):
         """
         merge two sorted list inplace using operator AND
         warning: other may be modified.

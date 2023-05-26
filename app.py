@@ -31,10 +31,9 @@ def search():
             indices = boolean_solve(query, cc)
             return {
                 "code": 200,
-                "msg": "OK: count = len(indices)",
+                "msg": f"OK: count = {len(indices)}",
                 "cnt" : len(indices),
                 "result": [doc_to_dict(fetch_doc(doc_id, c)) for doc_id in indices.extract(5)]
             }
-        
     else:
         raise NotImplementedError()

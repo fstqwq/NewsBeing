@@ -1,6 +1,9 @@
-from api import *
+import sys
 import time
-import parse
+
+sys.path.append('.')
+from backend.api import *
+from backend import parse
 
 if __name__ == "__main__":
     # read config from data/config-sample.json
