@@ -75,6 +75,6 @@ def boolean_parse(expr: str):
         return operands[0]
     else:
         if len(tokens) == 1:
-            return tokens
+            return tokens[0]
         else:
             return ('AND', tokens)

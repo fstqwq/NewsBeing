@@ -12,7 +12,10 @@ boolean_expressions = [
     "NOT (car AND rent)",
     "()",
     "(",
-    ")"
+    ")",
+    "car",
+    "car rent",
+    "AND"
 ]
 
 for expr in boolean_expressions:

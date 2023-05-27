@@ -115,11 +115,11 @@ struct SortedIndex {
             if (other.comp) {
                 // NOT A AND NOT B -> NOT (A OR B)
                 array = merge_sorted_list_or(array, other.array);
-                comp = false;
             } else {
                 // NOT A AND B -> B - A
                 merge_sorted_list_and_not_inplace(other.array, array);
                 array = std::move(other.array);
+                comp = false;
             }
         } else {
             if (other.comp) {
@@ -149,7 +149,7 @@ struct SortedIndex {
         if (comp) {
             int j = 0;
             vector<int> ret;
-            for (int i = 0; i < total; i++) {
+            for (int i = 1; i <= total; i++) {
                 if (j < array.size() && i == array[j]) {
                     j++;
                 } else {

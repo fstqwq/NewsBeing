@@ -1,10 +1,9 @@
+#include <bits/stdc++.h>
 #include "sqlite3.h"
-#include "json/json.h"
-#include <cassert>
 
+#include "sorted_index.hpp"
 using namespace std;
 
-#include "sorted_index.h"
 
 int worker_id, doc_count;
 sqlite3* db_connection;
@@ -14,7 +13,7 @@ void count_doc() {
     sqlite3_prepare_v2(db_connection, "SELECT COUNT(*) FROM documents", -1, &stmt, NULL);
     sqlite3_step(stmt);
     doc_count = sqlite3_column_int(stmt, 0);
-    fprintf(stderr, "count = %d\n", doc_count);
+    // fprintf(stderr, "count = %d\n", doc_count);
     sqlite3_finalize(stmt);
 }
 
@@ -75,7 +74,7 @@ SortedIndex get_sorted_index(const string& token) {
         result.push_back(doc_id);
     }
     sqlite3_finalize(stmt);
-    if (worker_id == 0) fprintf(stderr, "query = %s result.size() = %d\n", token.c_str(), result.size());
+    // if (worker_id == 0) fprintf(stderr, "query = %s result.size() = %d\n", token.c_str(), result.size());
     return SortedIndex(std::move(result), doc_count, false);
 }
 
@@ -92,7 +91,7 @@ int* boolean_solve(const char* expr) {
     int pg_first, pg_last;
     ss >> pg_first >> pg_last;
     while (ss >> token) {
-        if (worker_id == 0) fprintf(stderr, "token = %s\n", token.c_str());
+        // if (worker_id == 0) fprintf(stderr, "token = %s\n", token.c_str());
         if (token == "AND") {
             auto a = std::move(stack.back());
             stack.pop_back();
@@ -119,8 +118,9 @@ int* boolean_solve(const char* expr) {
     auto &a = stack.back();
 
     static int return_buffer[16][102];
-
-    fprintf(stderr, "a.size() = %d\n", (int) a.size());
+    // if (worker_id == 0) {
+    //     fprintf(stderr, "a.size() = %d, a.comp = %d, arr[0] = %d\n", (int) a.size(), (int) a.comp, a.array[0]);
+    // }
     return_buffer[worker_id][0] = a.size();
     int l = pg_first;
     int r = min(return_buffer[worker_id][0], pg_last);
@@ -130,6 +130,9 @@ int* boolean_solve(const char* expr) {
     auto ret = a.extract(r);
     for (int i = 0; i < len; i++) {
         return_buffer[worker_id][i + 2] = ret[l + i - 1];
+        // if (worker_id == 0) {
+        //     fprintf(stderr, "return_buffer[%d][%d] = %d\n", worker_id, i + 2, return_buffer[worker_id][i + 2]);
+        // }
     }
     return return_buffer[worker_id];
 }

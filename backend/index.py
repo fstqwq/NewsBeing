@@ -134,7 +134,7 @@ class SortedIndex:
         if self.comp:
             j = 0
             ret = []
-            for i in range(self.total):
+            for i in range(1, self.total + 1):
                 if j < len(self.array) and i == self.array[j]:
                     j += 1
                 else:

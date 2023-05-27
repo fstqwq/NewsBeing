@@ -112,7 +112,8 @@ def fetch_doc_global_id(global_id, config : dict) -> Tuple[str, str, int]:
     with sqlite3.connect(dbfile) as conn:
         conn = sqlite3.connect(dbfile)
         c = conn.cursor()
-        return fetch_doc(global_id[1], c)
+        ret = fetch_doc(global_id[1], c)
+        return ret
 
 
 def fetch_tree(expr, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
@@ -172,5 +173,6 @@ def worker(id, config, input, output):
                 if ty == 'Boolean':
                     indices = boolean_solve(query, (c, tot))
                 output.put(indices)
+                print(f"Worker {id} finished task {task}, len = {len(indices)}")
             except Exception as e:
                 output.put(e)

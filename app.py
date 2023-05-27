@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, url_for, jsonify
 import json
 
 from backend.api import *
-from backend.api_cpp import *
 from config import *
 from multiprocessing import Pool, Manager
 
@@ -37,6 +36,7 @@ def search():
         elif failed is not None:
             continue
         tot += len(indices)
+        print(indices.extract(10))
         results.extend([(i, x) for x in indices.extract(10)])
     if failed is not None:
         return {
@@ -50,16 +50,16 @@ def search():
         "result": [doc_to_dict(fetch_doc_global_id(doc_id, config)) for doc_id in results[:10]]
     }
 
-@app.route('/doc', methods=['POST'])
+@app.route('/doc', methods=['GET', 'POST'])
 def doc():
-    global_id = request.json['global_id']
+    global_id = request.args.get('global_id')
     if global_id is None:
         return {
             "code": 400,
             "msg": "FAIL: Empty global_id"
         }
-    if isinstance(global_id, int):
-        global_id = (global_id // MAX_PER_WORKER, global_id % MAX_PER_WORKER)
+    global_id = int(global_id)
+    global_id = (global_id // MAX_PER_WORKER, global_id % MAX_PER_WORKER)
     url, text, timestamp = fetch_doc_global_id(global_id, config)
     return {
         "code": 200,

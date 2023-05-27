@@ -44,8 +44,15 @@ def worker_cpp(id, config, input, output):
             count = indices_cpp[0]
             arrlen = indices_cpp[1]
             indices = []
+
             for i in range(arrlen):
                 indices.append(indices_cpp[i + 2])
+
+            if id == 0:
+                print("Count = ", count)
+                print("Arrlen = ", arrlen)
+                for i in range(12):
+                    print(indices_cpp[i])
             ret = SortedIndexCPP(indices, count)
             output.put(ret)
         except Exception as e:
@@ -61,7 +68,10 @@ def parse_tree_cpp(expr):
             return [expr]
     assert(isinstance(expr, tuple))
     ret = []
-    for e in expr[1]:
-        ret.extend(parse_tree_cpp(e))
+    if expr[0] == 'AND' or expr[0] == 'OR':
+        for e in expr[1]:
+            ret.extend(parse_tree_cpp(e))
+    else:
+        ret.extend(parse_tree_cpp(expr[1]))
     ret.append(expr[0])
     return ret
