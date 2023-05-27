@@ -168,8 +168,7 @@ def establish_db_connection(id, config, readonly = True, remove_existed = False)
 def worker(id, config, input, output):
     with establish_db_connection(id, config) as conn:
         c = conn.cursor()
-        c.execute("SELECT COUNT(*) FROM inverted_index")
-        tot = c.fetchone()[0]        
+        tot = fetch_num_docs(c)
         while True:
             task = input.get()
             if task is None:
