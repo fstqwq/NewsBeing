@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, url_for, jsonify
 import json
 
 from backend.api import *
+from backend.api_cpp import *
 from config import *
 from multiprocessing import Pool, Manager
 

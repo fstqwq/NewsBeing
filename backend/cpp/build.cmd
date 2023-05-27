@@ -1,0 +1,1 @@
+g++ -shared worker.cpp -o worker.dll -Ilib lib/sqlite3.o

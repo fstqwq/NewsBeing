@@ -90,17 +90,11 @@ def preprocess(config):
     pool.starmap(preprocess_worker, [(i, config) for i in range(num_worker)])
 
 def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
+    if token == '':
+        return SortedIndex([], tot, True)
     c, tot = cc
     c.execute("SELECT doc_id FROM inverted_index WHERE token=?", (token,))
     return SortedIndex(c.fetchall(), tot, False)
-
-def fetch_index_by_text(text : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
-    c, tot = cc
-    tokens = make_tokens(text)
-    if len(tokens) == 0:
-        return SortedIndex([], tot, True) # all
-    else:
-        return fetch_index_by_token(tokens[0], cc)
 
 def fetch_doc(id : int, c : sqlite3.Cursor) -> Tuple[str, str, int]:
     c.execute("SELECT url, text, timestamp FROM documents WHERE id=?", (id,))
@@ -126,7 +120,7 @@ def fetch_tree(expr, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
     Fetch the tree of the given expression
     """
     if isinstance(expr, str):
-        return fetch_index_by_text(expr, cc)
+        return fetch_index_by_token(expr, cc)
     assert(isinstance(expr, tuple))
     if expr[0] == 'AND' or expr[0] == 'OR':
         operands = [fetch_tree(e, cc) for e in expr[1]]
@@ -140,7 +134,7 @@ def fetch_tree(expr, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
         return result
     elif expr[0] == 'NOT':
         return ~fetch_tree(expr[1], cc)
-    raise Exception("Bad expression: " + str(expr))
+    raise Exception("Unreachable code reached: " + str(expr))
     
 
 def boolean_solve(expr : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:

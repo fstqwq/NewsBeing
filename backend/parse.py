@@ -24,8 +24,8 @@ def make_tokens(text):
 
 def make_token(token):
     token = token.lower()
-    if token in stopword_set or token in punctuations:
-        return None
+    if token in stopword_set or token in punctuations or len(token) == 0:
+        return ''
     return lemmatize(token)
 
 def split_tokens(expr : str):
@@ -61,7 +61,7 @@ def boolean_parse(expr: str):
                         raise ValueError('Illegeal expression')
                     ops.pop()
             else:
-                operands.append(token)
+                operands.append(make_token(token))
         while len(ops) > 0:
             if ops[-1] == '(':
                 break
@@ -74,4 +74,7 @@ def boolean_parse(expr: str):
             raise ValueError('Illegeal expression')
         return operands[0]
     else:
-        return ('AND', tokens)
+        if len(tokens) == 1:
+            return tokens
+        else:
+            return ('AND', tokens)

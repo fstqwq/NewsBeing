@@ -2,3 +2,6 @@ data/realnewslike/c4-*.json
 web/node_modules
 data/db/*.db
 __pycache__
+*.dll
+*.o
+.vscode
