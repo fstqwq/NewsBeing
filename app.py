@@ -33,7 +33,7 @@ def search():
         if isinstance(indices, Exception):
             failed = indices
             continue
-        elif failed is None:
+        elif failed is not None:
             continue
         tot += len(indices)
         results.extend([(i, x) for x in indices.extract(10)])
@@ -83,5 +83,5 @@ if __name__ == "__main__":
             workers.append(process)
             query_queues.append(q1)
             response_queues.append(q2)
-    app.run(debug=True, use_reloader=False, host='127.0.0.1', port=5000)
+    app.run(debug=True, use_reloader=False, host='127.0.0.1', port=5000, threaded=False)
 

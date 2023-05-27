@@ -160,8 +160,8 @@ def establish_db_connection(id, config, readonly = True, remove_existed = False)
     conn.execute("PRAGMA page_size = 4096")
     if readonly:
         conn.execute("PRAGMA temp_store = MEMORY")
-        conn.execute("PRAGMA journal_mode = OFF")
-        conn.execute("PRAGMA synchronous = OFF")
+    conn.execute("PRAGMA journal_mode = OFF")
+    conn.execute("PRAGMA synchronous = OFF")
     return conn
 
 
