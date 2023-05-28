@@ -1,9 +1,10 @@
 from flask import Flask, render_template, request, url_for, jsonify
 import json
+from multiprocessing import Pool, Manager
+import time
 
 from backend.api import *
 from config import *
-from multiprocessing import Pool, Manager
 
 app = Flask(__name__)
 
@@ -22,10 +23,13 @@ def search():
             "code": 400,
             "msg": "FAIL: Empty query"
         }
+    begin = time.time()
     for i in range(config['num_worker']):
         query_queues[i].put((ty, query))
     results = []
     tot = 0
+
+    print(f"Waiting for results... {time.time() - begin}")
     
     failed = None
     for i in range(config['num_worker']):
@@ -36,18 +40,20 @@ def search():
         elif failed is not None:
             continue
         tot += len(indices)
-        print(indices.extract(10))
         results.extend([(i, x) for x in indices.extract(10)])
+        print(f"Result {i}... {time.time() - begin}")
     if failed is not None:
         return {
             "code": 400,
             "msg": f"FAIL: {repr(failed)}"
         }
+    result_docs = [doc_to_dict(fetch_doc_global_id(doc_id, config)) for doc_id in results[:10]]
+    print(f"Done fetching ... {time.time() - begin}")
     return {
         "code": 200,
         "msg": f"OK: count = {tot}",
         "cnt" : tot,
-        "result": [doc_to_dict(fetch_doc_global_id(doc_id, config)) for doc_id in results[:10]]
+        "result": result_docs
     }
 
 @app.route('/doc', methods=['GET', 'POST'])

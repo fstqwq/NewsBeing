@@ -4,6 +4,7 @@ import json
 import os
 from datetime import datetime
 from typing import Tuple
+import time
 
 
 from .parse import *
@@ -93,8 +94,12 @@ def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> Sorted
     if token == '':
         return SortedIndex([], tot, True)
     c, tot = cc
+    # begin = time.time()
     c.execute("SELECT doc_id FROM inverted_index WHERE token=?", (token,))
-    return SortedIndex(c.fetchall(), tot, False)
+    result = SortedIndex(c.fetchall(), tot, False)
+    # end = time.time()
+    # print(f"DB exec ({token}) time: {end - begin}, count = {len(result)}")
+    return result
 
 def fetch_doc(id : int, c : sqlite3.Cursor) -> Tuple[str, str, int]:
     c.execute("SELECT url, text, timestamp FROM documents WHERE id=?", (id,))
@@ -173,6 +178,5 @@ def worker(id, config, input, output):
                 if ty == 'Boolean':
                     indices = boolean_solve(query, (c, tot))
                 output.put(indices)
-                print(f"Worker {id} finished task {task}, len = {len(indices)}")
             except Exception as e:
                 output.put(e)
