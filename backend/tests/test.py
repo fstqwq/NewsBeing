@@ -46,5 +46,12 @@ if __name__ == "__main__":
     global_id = (0, 18)
     url, text, timestamp = fetch_doc_global_id(global_id, config)
     print(f"{global_id} : {url} : {datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y %H:%M:%S')} : {text[:200]}")
+
+    #test rank search 
+    query = "research direction of Google"
+    result = rank_search(query, cc)
+    for rank, (doc_id, score) in enumerate(result[:5]):
+        url, text, timestamp = fetch_doc(doc_id, c)
+        print(f"{rank}. {doc_id} : {url} : {datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y %H:%M:%S')} : {text[:200]}")
     
     

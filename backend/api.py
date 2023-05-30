@@ -50,7 +50,7 @@ def preprocess_worker(id, config, gen_inverted_index = True):
                 (url TEXT, text TEXT, timestamp INTEGER, id INTEGER PRIMARY KEY AUTOINCREMENT)''')
     if gen_inverted_index:
         c.execute('''CREATE TABLE inverted_index
-                    (token TEXT, doc_id INTEGER)''')
+                    (token TEXT, doc_id INTEGER, tf REAL)''')
     conn.commit()
 
     files = config['jsonfiles']
@@ -69,12 +69,20 @@ def preprocess_worker(id, config, gen_inverted_index = True):
             c.execute("INSERT INTO documents VALUES (?, ?, ?, NULL)", (url, text, timestamp))
             doc_id = c.lastrowid
 
-            tokens = set(make_tokens(text))
+            words = make_tokens(text)
+            tokens = set(words)
+            dic = {}
+            cnt = 0
+            for word in words:
+                if (word not in dic):
+                    dic[word] = 0
+                else: 
+                    dic[word] = dic[word] + 1   
+                cnt = cnt + 1    
             
             if gen_inverted_index:
                 for token in tokens:
-                    c.execute("INSERT INTO inverted_index VALUES (?, ?)", (token, doc_id))
-
+                    c.execute("INSERT INTO inverted_index VALUES (?, ?, ?)", (token, doc_id, dic[token] / cnt))
         conn.commit()
     conn.close()
 
@@ -147,6 +155,37 @@ def boolean_solve(expr : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
     tree = boolean_parse(expr)
     indices = fetch_tree(tree, cc)
     return indices
+
+def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
+    c, tot = cc
+    result = {}
+    words = make_tokens(query)
+    dic = {}
+    cnt = 0
+    for word in words:
+        if word not in dic: 
+            dic[word] = 1
+        else:
+            dic[word] = dic[word] + 1
+        cnt = cnt + 1 
+    print(dic)    
+    tokens = set(words)
+    for token in tokens:
+        qf = dic[token] / cnt
+        c.execute("SELECT doc_id, tf FROM inverted_index WHERE token=?", (token,))
+        tmp = c.fetchall()
+        df = len(tmp)
+        w1 = qf / (qf + 1.2)
+        w3 = math.log2((tot - df + 0.5) / (df + 0.5))
+        print(token, df, qf)
+        for (doc_id, tf) in tmp:
+            w2 = tf * 1.5 / (tf  + 1.5)
+            if (doc_id in result):
+                result[doc_id] = result[doc_id] + w1 * w2 * w3
+            else: 
+                result[doc_id] = w1 * w2 * w3    
+    result1 = sorted(result.items(), key = lambda d: d[1], reverse = True)
+    return result1
 
 
 def establish_db_connection(id, config, readonly = True, remove_existed = False):
