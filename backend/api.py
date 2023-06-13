@@ -3,9 +3,10 @@ import sqlite3
 import json
 import os
 from datetime import datetime
-from typing import Tuple
-import time
-
+from typing import Tuple, List, Dict
+import math
+import numpy
+import numcompress
 
 from .parse import *
 
@@ -49,23 +50,34 @@ def preprocess_worker(id, config, gen_inverted_index = True):
     c.execute('''CREATE TABLE documents
                 (url TEXT, text TEXT, timestamp INTEGER, id INTEGER PRIMARY KEY AUTOINCREMENT)''')
     if gen_inverted_index:
+        # c.execute('''CREATE TABLE inverted_index
+        #             (token TEXT, doc_id INTEGER, tf REAL)''')
         c.execute('''CREATE TABLE inverted_index
-                    (token TEXT, doc_id INTEGER, tf REAL)''')
+                    (token TEXT, doc_id BLOB, tf BLOB, version INTEGER)''')
     conn.commit()
 
     files = config['jsonfiles']
     files_low = id * len(files) // num_worker
     files_high = (id + 1) * len(files) // num_worker
 
-    # parse json
+    token_doc_id: Dict[List[int]] = {}
+    token_tf: Dict[List[float]] = {}
+    token_seen = {}
+    format_str = '%Y-%m-%dT%H:%M:%SZ'
 
-    for file in files[files_low:files_high]:
-        for line in open(os.path.join(jsonpath, file), 'r', encoding=config['encoding']):
+    for i, file in enumerate(files[files_low:files_high]):
+        if id == 0:
+            print('Indexing {} Total {}'.format(i, files_high - files_low))
+
+        for j, line in enumerate(open(os.path.join(jsonpath, file), 'r', encoding=config['encoding'])):
+            if id == 0 and j % 1000 == 0:
+                print('Line {} Total 26953'.format(j))
             # parse json
             content = json.loads(line)
             url = content['url']
             text:str = content['text']
-            timestamp = datetime.fromisoformat(content['timestamp']).timestamp()
+            # timestamp = datetime.fromisoformat(content['timestamp']).timestamp()
+            timestamp = datetime.strptime(content['timestamp'], format_str).timestamp()
             c.execute("INSERT INTO documents VALUES (?, ?, ?, NULL)", (url, text, timestamp))
             doc_id = c.lastrowid
 
@@ -81,9 +93,32 @@ def preprocess_worker(id, config, gen_inverted_index = True):
                 cnt = cnt + 1    
             
             if gen_inverted_index:
+                # for token in tokens:
+                #     c.execute("INSERT INTO inverted_index VALUES (?, ?, ?)", (token, doc_id, dic[token] / cnt))
                 for token in tokens:
-                    c.execute("INSERT INTO inverted_index VALUES (?, ?, ?)", (token, doc_id, dic[token] / cnt))
-        conn.commit()
+                    token_seen[token] = True
+                    if token not in token_doc_id:
+                        token_doc_id[token] = []
+                        token_tf[token] = []
+                    token_doc_id[token].append(doc_id)
+                    token_tf[token].append(dic[token] / cnt)
+
+        if i in [15, 31]:
+            if id == 0:
+                print('Flushing')
+            for token in token_doc_id:
+                # doc_id_arr = numpy.array(token_doc_id[token], dtype=numpy.int32) # Uncompressed
+                # tf_arr = numpy.array(token_tf[token], dtype=numpy.float32) # Uncompressed
+                doc_id_arr = token_doc_id[token] # Compressed
+                if len(doc_id_arr) > 1:
+                    for i in range(len(doc_id_arr) - 1, 0, -1):
+                        doc_id_arr[i] -= doc_id_arr[i - 1] # Difference
+                doc_id_arr = numcompress.compress(doc_id_arr)
+                tf_arr = numcompress.compress(token_tf[token]) # Compressed
+                c.execute('INSERT INTO inverted_index VALUES (?, ?, ?, ?)', (token, doc_id_arr.encode(), tf_arr.encode(), i))
+                conn.commit()
+            token_doc_id, token_tf = {}, {}
+
     conn.close()
 
 
@@ -103,8 +138,16 @@ def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> Sorted
         return SortedIndex([], tot, True)
     c, tot = cc
     # begin = time.time()
-    c.execute("SELECT doc_id FROM inverted_index WHERE token=?", (token,))
-    result = SortedIndex(c.fetchall(), tot, False)
+    c.execute("SELECT doc_id, version FROM inverted_index WHERE token=?", (token,))
+    ret = sorted(c.fetchall(), key=lambda x: x[1])
+    doc_id_arr = []
+    for item in ret:
+        # doc_id_arr.extend(numpy.frombuffer(item[0], dtype=numpy.int32).tolist()) # Uncompressed
+        arr = [int(item) for item in numcompress.decompress(item[0].decode())] # Compressed
+        for i in range(1, len(arr)):
+            arr[i] += arr[i - 1] # Difference
+        doc_id_arr.extend(arr) # Compressed
+    result = SortedIndex(doc_id_arr, tot, False)
     # end = time.time()
     # print(f"DB exec ({token}) time: {end - begin}, count = {len(result)}")
     return result
@@ -168,17 +211,29 @@ def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
         else:
             dic[word] = dic[word] + 1
         cnt = cnt + 1 
-    print(dic)    
+ 
     tokens = set(words)
     for token in tokens:
         qf = dic[token] / cnt
-        c.execute("SELECT doc_id, tf FROM inverted_index WHERE token=?", (token,))
-        tmp = c.fetchall()
-        df = len(tmp)
+        c.execute("SELECT doc_id, tf, version FROM inverted_index WHERE token=?", (token,))
+        ret = sorted(c.fetchall(), key=lambda x: x[2])
+        doc_id_arr, tf_arr = [], []
+        for item in ret:
+            # doc_id_arr.extend(numpy.frombuffer(item[0], dtype=numpy.int32).tolist()) # Uncompressed
+            # tf_arr.extend(numpy.frombuffer(item[1], dtype=numpy.float32).tolist()) # Uncompressed
+            arr = [int(item) for item in numcompress.decompress(item[0].decode())] # Compressed
+            for i in range(1, len(arr)):
+                arr[i] += arr[i - 1] # Difference
+            doc_id_arr.extend(arr) # Compressed
+            tf_arr.extend(numcompress.decompress(item[1].decode())) # Compressed
+        # tmp = c.fetchall()
+        # df = len(tmp)
+        df = len(doc_id_arr)
         w1 = qf / (qf + 1.2)
         w3 = math.log2((tot - df + 0.5) / (df + 0.5))
         print(token, df, qf)
-        for (doc_id, tf) in tmp:
+        for i in range(len(doc_id_arr)):
+            doc_id, tf = doc_id_arr[i], tf_arr[i]
             w2 = tf * 1.5 / (tf  + 1.5)
             if (doc_id in result):
                 result[doc_id] = result[doc_id] + w1 * w2 * w3

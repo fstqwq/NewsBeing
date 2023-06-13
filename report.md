@@ -12,3 +12,11 @@
 | ret, ~8300 (1/16) | Yes | No | \*sqlite3 | 0.06 s |
 | buy, ~43000 (1/16) | Yes | No | \*sqlite3 | 0.26 s |
 | car, ~54500 (1/16) | Yes | No | \*sqlite3 | 0.33 s |
+
+# Efficiency 2
+
+Document 43.49G
+Preprocess, Boolean Query, Rank Query, Total Size, Index Size
+2160s, 0.78s, 0.32s, 63G, 18.71G (Without Compression)
+2250s, 0.86s, 0.38s, 56G, 11.68G (With Compression)
+2325s, 1.07s, 0.36s, 55G, 11.48G (With Compression and Gap Storage)
