@@ -40,15 +40,16 @@
             :data-source="resultShown"
             style="width: 80%; margin-top: 20px;"
         >
+            <a-spin v-if="loading" size="large"/>
             <div
                 v-if="showLoadingMore"
                 slot="loadMore"
                 :style="{marginTop: '12px', height: '32px', lineHeight: '32px' }"
             >
-            <a-spin v-if="loadingMore" />
-            <a-button v-else @click="onLoadMore">
-                loading more
-            </a-button>
+                <a-spin v-if="loadingMore" />
+                <a-button v-else @click="onLoadMore">
+                    loading more
+                </a-button>
             </div>
             <a-list-item slot="renderItem" slot-scope="item, index">
                 <a-list-item-meta
@@ -124,6 +125,7 @@ export default {
             else this.getData("Ranked", value)
         },
         getData(type, query) {
+            this.loading = true
             var input = {'type': type, 'query': query}
             console.log('input', input)
             axios.post('http://127.0.0.1:5000/search', input).then(res => {
@@ -142,6 +144,7 @@ export default {
                     this.qa = res.data.qa
                 }
                 this.resultShown = []
+                this.loading = false
                 this.onLoadMore()
             })
             // var res = {
@@ -190,9 +193,7 @@ export default {
             // }
         },
         onLoadMore() {
-            /* setTimeout(() => { */
-                this.resultShown = (this.resultShown.length + this.pageSize <= this.result.length) ? this.result.slice(0, this.resultShown.length + this.pageSize) : this.result
-            /*}, Math.random() * 500 + 500) */
+            this.resultShown = (this.resultShown.length + this.pageSize <= this.result.length) ? this.result.slice(0, this.resultShown.length + this.pageSize) : this.result
         },
         showDrawer(index) {
             this.drawerVisible = true
