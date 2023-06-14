@@ -103,7 +103,7 @@ def preprocess_worker(id, config, gen_inverted_index = True):
                     token_doc_id[token].append(doc_id)
                     token_tf[token].append(dic[token] / cnt)
 
-        if i in [15, 31]:
+        if i in [0]:
             if id == 0:
                 print('Flushing')
             for token in token_doc_id:
@@ -271,6 +271,8 @@ def worker(id, config, input, output):
                 ty, query = task
                 if ty == 'Boolean':
                     indices = boolean_solve(query, (c, tot))
+                elif ty == 'Ranked':
+                    indices = rank_search(query, (c, tot))
                 output.put(indices)
             except Exception as e:
                 output.put(e)

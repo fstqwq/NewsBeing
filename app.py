@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, url_for, jsonify
 import json
 from multiprocessing import Pool, Manager
 import time
+import math
+from datetime import datetime
 
 from backend.api import *
 from config import *
@@ -31,30 +33,70 @@ def search():
 
     print(f"Waiting for results... {time.time() - begin}")
     
-    failed = None
-    for i in range(config['num_worker']):
-        indices = response_queues[i].get()
-        if isinstance(indices, Exception):
-            failed = indices
-            continue
-        elif failed is not None:
-            continue
-        tot += len(indices)
-        results.extend([(i, x) for x in indices.extract(10)])
-        print(f"Result {i}... {time.time() - begin}")
-    if failed is not None:
+    if ty == 'Boolean':
+        failed = None
+        for i in range(config['num_worker']):
+            indices = response_queues[i].get()
+            if isinstance(indices, Exception):
+                failed = indices
+                continue
+            elif failed is not None:
+                continue
+            tot += len(indices)
+            results.extend([(i, x) for x in indices.extract(10)])
+            print(f"Result {i}... {time.time() - begin}")
+        if failed is not None:
+            return {
+                "code": 400,
+                "msg": f"FAIL: {repr(failed)}"
+            }
+        result_docs = [doc_to_dict(fetch_doc_global_id(doc_id, config)) for doc_id in results[:10]]
+        print(f"Done fetching ... {time.time() - begin}")
         return {
-            "code": 400,
-            "msg": f"FAIL: {repr(failed)}"
+            "code": 200,
+            "msg": f"OK: count = {tot}",
+            "cnt" : tot,
+            "result": result_docs
         }
-    result_docs = [doc_to_dict(fetch_doc_global_id(doc_id, config)) for doc_id in results[:10]]
-    print(f"Done fetching ... {time.time() - begin}")
-    return {
-        "code": 200,
-        "msg": f"OK: count = {tot}",
-        "cnt" : tot,
-        "result": result_docs
-    }
+    if ty == 'Ranked':
+        failed = None
+        timecurrent = "2022-06-16T12:00:00Z"
+        format_str = '%Y-%m-%dT%H:%M:%SZ'
+        nowtime = datetime.strptime(timecurrent format_str).timestamp()
+        for i in range(config['num_worker']):
+            indices = response_queues[i].get()
+            if isinstance(indices, Exception):
+                failed = indices
+                continue
+            elif failed is not None:
+                continue
+            tot += len(indices)
+            results.extend([(i, x) for x in indices[:10]])
+            print(f"Result {i}... {time.time() - begin}")
+        if failed is not None:
+            return {
+                "code": 400,
+                "msg": f"FAIL: {repr(failed)}"
+            }
+        sorted_results = sorted(results, key = lambda d: d[1][1], reverse = True)    
+        freshness = {}
+        final_result = {}
+        for group, (doc_id, score) in sorted_results[:10]:
+            doc = fetch_doc_global_id((group, doc_id), config)
+            final_result[(group, doc_id)] = doc
+            freshness[(group, doc_id)] = math.log2(score) + 0.5 / (nowtime - doc[2])
+        sorted_results = sorted(freshness.items(), key = lambda d: d[1], reverse = True)
+        result_docs = [doc_to_dict(final_result[(group, doc_id)]) for (group, doc_id), score in sorted_results[:10]]    
+        print(f"Done fetching ... {time.time() - begin}")
+        return {
+            "code": 200,
+            "msg": f"OK: count = {tot}",
+            "cnt" : tot,
+            "result": result_docs
+        }
+
+
+            
 
 @app.route('/doc', methods=['GET', 'POST'])
 def doc():
