@@ -1,5 +1,6 @@
 data/realnewslike/c4-*.json
 web/node_modules
+web/package-lock.json
 data/db/*.db
 __pycache__
 *.dll

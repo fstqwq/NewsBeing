@@ -1,3 +1,5 @@
 sqlite3
 nltk
 flask
+numcompress
+flask_cors
