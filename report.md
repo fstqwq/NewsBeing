@@ -16,7 +16,12 @@
 # Efficiency 2
 
 Document 43.49G
-Preprocess, Boolean Query, Rank Query, Total Size, Index Size
-2160s, 0.78s, 0.32s, 63G, 18.71G (Without Compression)
-2250s, 0.86s, 0.38s, 56G, 11.68G (With Compression)
-2325s, 1.07s, 0.36s, 55G, 11.48G (With Compression and Gap Storage)
+| Preprocess | Boolean Query | Rank Query | Total Size | Index Size |
+| --- | --- | --- | --- | --- |
+| 2160s | 0.78s | 0.32s | 63G | 18.71G (Without Compression) |
+| 2250s | 0.86s | 0.38s | 56G | 11.68G (With Compression) |
+| 2325s | 1.07s | 0.36s | 55G | 11.48G (With Compression and Gap Storage) |
+
+# Preprocess Real
+Start time: 2023-06-14 06:23:39.490280
+End time: 2023-06-14 07:23:13.735123

@@ -7,16 +7,19 @@ from typing import Tuple, List, Dict
 import math
 import numpy
 import numcompress
+import time
 
 from .parse import *
 
 
 def fetch_num_docs(c):
-    c.execute("SELECT COUNT(*) FROM documents")
+    # assuming no delete occurs
+    c.execute("SELECT MAX(_ROWID_) FROM documents LIMIT 1")
     return c.fetchone()[0]
 
 def fetch_num_inverted_indices(c):
-    c.execute("SELECT COUNT(*) FROM inverted_index")
+    # assuming no delete occurs
+    c.execute("SELECT MAX(_ROWID_) FROM inverted_index LIMIT 1")
     return c.fetchone()[0]
 
 def test_db(config):
@@ -32,10 +35,8 @@ def test_db(config):
         with sqlite3.connect(dbfile) as conn:
             try:
                 c = conn.cursor()
-                c.execute("SELECT COUNT(*) FROM documents")
-                num_doc += c.fetchone()[0]
-                c.execute("SELECT COUNT(*) FROM inverted_index")
-                num_token += c.fetchone()[0]
+                num_doc += fetch_num_docs(c)
+                num_token += fetch_num_inverted_indices(c)
             except:
                 return None, None
     return num_doc, num_token
@@ -103,20 +104,21 @@ def preprocess_worker(id, config, gen_inverted_index = True):
                     token_doc_id[token].append(doc_id)
                     token_tf[token].append(dic[token] / cnt)
 
-        if i in [15, 31]:
+        if i % 16 == 15 or i == files_high - files_low - 1:
             if id == 0:
                 print('Flushing')
-            for token in token_doc_id:
+            for token, doc_id_arr in token_doc_id.items():
                 # doc_id_arr = numpy.array(token_doc_id[token], dtype=numpy.int32) # Uncompressed
                 # tf_arr = numpy.array(token_tf[token], dtype=numpy.float32) # Uncompressed
-                doc_id_arr = token_doc_id[token] # Compressed
-                if len(doc_id_arr) > 1:
-                    for i in range(len(doc_id_arr) - 1, 0, -1):
-                        doc_id_arr[i] -= doc_id_arr[i - 1] # Difference
+
+                # if len(doc_id_arr) > 1:
+                #     for i in range(len(doc_id_arr) - 1, 0, -1):
+                #         doc_id_arr[i] -= doc_id_arr[i - 1] # Difference
+
                 doc_id_arr = numcompress.compress(doc_id_arr)
                 tf_arr = numcompress.compress(token_tf[token]) # Compressed
                 c.execute('INSERT INTO inverted_index VALUES (?, ?, ?, ?)', (token, doc_id_arr.encode(), tf_arr.encode(), i))
-                conn.commit()
+            conn.commit()
             token_doc_id, token_tf = {}, {}
 
     conn.close()
@@ -130,26 +132,30 @@ def preprocess(config):
 
     num_worker = config['num_worker']
     
+    print("Start time: " + str(datetime.now()))
     pool = multiprocessing.Pool(processes=num_worker)
     pool.starmap(preprocess_worker, [(i, config) for i in range(num_worker)])
+    print("End time: " + str(datetime.now()))
 
 def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
     if token == '':
         return SortedIndex([], tot, True)
     c, tot = cc
-    # begin = time.time()
+    begin = time.time()
     c.execute("SELECT doc_id, version FROM inverted_index WHERE token=?", (token,))
-    ret = sorted(c.fetchall(), key=lambda x: x[1])
+    ret = c.fetchall()
+    mid = time.time()
+    ret.sort(key=lambda x: x[1])
     doc_id_arr = []
     for item in ret:
         # doc_id_arr.extend(numpy.frombuffer(item[0], dtype=numpy.int32).tolist()) # Uncompressed
         arr = [int(item) for item in numcompress.decompress(item[0].decode())] # Compressed
-        for i in range(1, len(arr)):
-            arr[i] += arr[i - 1] # Difference
+        # for i in range(1, len(arr)):
+        #     arr[i] += arr[i - 1] # Difference
         doc_id_arr.extend(arr) # Compressed
     result = SortedIndex(doc_id_arr, tot, False)
-    # end = time.time()
-    # print(f"DB exec ({token}) time: {end - begin}, count = {len(result)}")
+    end = time.time()
+    print(f"DB exec ({token}) time: {end - begin}, db time = {mid - begin}, count = {len(result)}")
     return result
 
 def fetch_doc(id : int, c : sqlite3.Cursor) -> Tuple[str, str, int]:
@@ -222,8 +228,8 @@ def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
             # doc_id_arr.extend(numpy.frombuffer(item[0], dtype=numpy.int32).tolist()) # Uncompressed
             # tf_arr.extend(numpy.frombuffer(item[1], dtype=numpy.float32).tolist()) # Uncompressed
             arr = [int(item) for item in numcompress.decompress(item[0].decode())] # Compressed
-            for i in range(1, len(arr)):
-                arr[i] += arr[i - 1] # Difference
+            # for i in range(1, len(arr)):
+            #     arr[i] += arr[i - 1] # Difference
             doc_id_arr.extend(arr) # Compressed
             tf_arr.extend(numcompress.decompress(item[1].decode())) # Compressed
         # tmp = c.fetchall()
