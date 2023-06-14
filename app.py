@@ -79,12 +79,29 @@ def issue_query(ty, query):
         }
 
 
+@lru_cache(maxsize=512)
+def issue_summary(query):
+    return {
+        "code": 200,
+        "msg": "OK",
+        "result": query
+    }
+
+@lru_cache(maxsize=512)
+def issue_qa(query):
+    return {
+        "code": 200,
+        "msg": "OK",
+        "result": "I’m sorry but I prefer not to continue this conversation. I’m still learning so I appreciate your understanding and patience.🙏"
+    }
+
+
 @app.route('/search', methods=['POST'])
 def search():
     start = time.time()
     ty = request.json['type']
     query = request.json['query']
-    if ty != 'Boolean' and ty != 'Ranked':
+    if ty not in ['Boolean', 'Ranked', 'Summary', 'QA']:
         return {
             "code": 400,
             "msg": "FAIL: Invalid query type"
@@ -94,12 +111,30 @@ def search():
             "code": 400,
             "msg": "FAIL: Empty query"
         }
-    begin = time.time()
-    result = issue_query(ty, query)
-    end = time.time()
+    if ty in ['Boolean', 'Ranked']:
+        begin = time.time()
+        result = issue_query(ty, query)
+        end = time.time()
 
-    result['time'] = f"{end - begin : .4f}"
-    return result
+        result['time'] = f"{end - begin : .4f}"
+        return result
+    
+    if ty == 'Summary':
+        begin = time.time()
+        result = issue_summary(query)
+        end = time.time()
+
+        result['time'] = f"{end - begin : .4f}"
+        return result
+    if ty == 'QA':
+        begin = time.time()
+        result = issue_qa(query)
+        end = time.time()
+
+        result['time'] = f"{end - begin : .4f}"
+        return result
+
+    assert False
 
 
             

@@ -165,6 +165,7 @@ def fetch_doc(id : int, c : sqlite3.Cursor) -> Tuple[str, str, int]:
 def doc_to_dict(doc : Tuple[str, str, int]) -> str:
     return {'url': doc[0], 'text': doc[1], 'timestamp': datetime.fromtimestamp(doc[2]).isoformat()}
 
+@lru_cache(maxsize=512)
 def fetch_doc_global_id(global_id, config : dict) -> Tuple[str, str, int]:
     """
     Create a cursor and fetch the document with the given global_id = (owner, id)
