@@ -57,9 +57,8 @@
                 <a-divider style="margin-top: 20px; margin-bottom: 20px;"></a-divider>
             </a-col>
         </a-row>
+        <a-row type="flex" justify="center" v-if="code === 200">{{ type }} search: {{ totalResult }} results in {{ latency }} second.</a-row>
         <a-row type="flex" justify="center">
-            
-        <a-col type="flex" justify="start" v-if="code === 200">{{ type }} search: {{ totalResult }} results in {{ latency }} second.</a-col>
         <a-list
             class="demo-loadmore-list"
             :loading="loading"
