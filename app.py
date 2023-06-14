@@ -13,7 +13,18 @@ app = Flask(__name__)
 CORS(app, resources=r'/*')
 
 @lru_cache(maxsize=512)
-def issue_query(ty, query):
+def issue_query(query : str):
+    query = query.strip()
+    if query == '':
+        return {
+            "code": 400,
+            "msg": "FAIL: Empty query"
+        }
+    if (query.startswith('(') and query.endswith(')')) or (query.startswith('[') and query.endswith(']')):
+        ty = 'Boolean'
+    else:
+        ty = 'Ranked'
+
     for i in range(config['num_worker']):
         query_queues[i].put((ty, query))
     results = []
@@ -39,10 +50,11 @@ def issue_query(ty, query):
         return {
             "code": 200,
             "msg": f"OK: count = {tot}",
+            "type": "Boolean",
             "cnt" : tot,
             "result": result_docs
         }
-    if ty == 'Ranked':
+    elif ty == 'Ranked':
         failed = None
         timecurrent = "2022-06-16T12:00:00Z"
         format_str = '%Y-%m-%dT%H:%M:%SZ'
@@ -68,15 +80,18 @@ def issue_query(ty, query):
             doc = fetch_doc_global_id((group, doc_id), config)
             #print(doc_id, score)
             final_result[(group, doc_id)] = doc
-            freshness[(group, doc_id)] = math.log2(score + 0.1) + 0.5 / (nowtime - doc[2])
+            freshness[(group, doc_id)] = math.log2(score + 1e-9) + 0.5 / (nowtime - doc[2])
         sorted_results = sorted(freshness.items(), key = lambda d: d[1], reverse = True)
         result_docs = [doc_to_dict(final_result[(group, doc_id)]) for (group, doc_id), score in sorted_results[:200]]    
         return {
             "code": 200,
             "msg": f"OK: count = {tot}",
+            "type": "Ranked",
             "cnt" : tot,
             "result": result_docs
         }
+    else:
+        assert False
 
 
 @lru_cache(maxsize=512)
@@ -99,43 +114,19 @@ def issue_qa(query):
 @app.route('/search', methods=['POST'])
 def search():
     start = time.time()
-    ty = request.json['type']
+    # ty = request.json['type']
     query = request.json['query']
-    if ty not in ['Boolean', 'Ranked', 'Summary', 'QA']:
-        return {
-            "code": 400,
-            "msg": "FAIL: Invalid query type"
-        }
-    if query == '':
-        return {
-            "code": 400,
-            "msg": "FAIL: Empty query"
-        }
-    if ty in ['Boolean', 'Ranked']:
-        begin = time.time()
-        result = issue_query(ty, query)
-        end = time.time()
+    # if ty not in ['Boolean', 'Ranked', 'Summary', 'QA']:
+    #     return {
+    #         "code": 400,
+    #         "msg": "FAIL: Invalid query type"
+    #     }
+    begin = time.time()
+    result = issue_query(query)
+    end = time.time()
 
-        result['time'] = f"{end - begin : .4f}"
-        return result
-    
-    if ty == 'Summary':
-        begin = time.time()
-        result = issue_summary(query)
-        end = time.time()
-
-        result['time'] = f"{end - begin : .4f}"
-        return result
-    if ty == 'QA':
-        begin = time.time()
-        result = issue_qa(query)
-        end = time.time()
-
-        result['time'] = f"{end - begin : .4f}"
-        return result
-
-    assert False
-
+    result['time'] = f"{end - begin : .4f}"
+    return result
 
             
 
@@ -166,6 +157,7 @@ if __name__ == "__main__":
         response_queues = [] 
         manager = Manager()
         for i in range(config['num_worker']):
+            print("Start worker ", i)
             q1 = manager.Queue()
             q2 = manager.Queue()
             process = multiprocessing.Process(target=worker, args=(i, config, q1, q2))        

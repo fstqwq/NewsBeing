@@ -138,9 +138,10 @@ def preprocess(config):
 
 @lru_cache(maxsize=512)
 def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
+    c, tot = cc
+    token = make_token(token)
     if token == '':
         return SortedIndex([], tot, True)
-    c, tot = cc
     begin = time.time()
     c.execute("SELECT doc_id, version FROM inverted_index WHERE token=?", (token,))
     ret = c.fetchall()
@@ -166,17 +167,20 @@ def doc_to_dict(doc : Tuple[str, str, int]) -> str:
     return {'url': doc[0], 'text': doc[1], 'timestamp': datetime.fromtimestamp(doc[2]).isoformat()}
 
 @lru_cache(maxsize=512)
+def fetch_doc_global_id_path(global_id, dbpath, dbfile) -> Tuple[str, str, int]:
+    with sqlite3.connect(dbfile) as conn:
+        conn = sqlite3.connect(dbfile)
+        c = conn.cursor()
+        ret = fetch_doc(global_id[1], c)
+        return ret
+
 def fetch_doc_global_id(global_id, config : dict) -> Tuple[str, str, int]:
     """
     Create a cursor and fetch the document with the given global_id = (owner, id)
     """
     dbpath = config['dbpath']
     dbfile = os.path.join(dbpath, config['name'] + f"-{global_id[0]}.db")
-    with sqlite3.connect(dbfile) as conn:
-        conn = sqlite3.connect(dbfile)
-        c = conn.cursor()
-        ret = fetch_doc(global_id[1], c)
-        return ret
+    return fetch_doc_global_id_path(global_id, dbpath, dbfile)
 
 
 def fetch_tree(expr, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
@@ -244,7 +248,7 @@ def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
         # df = len(tmp)
         df = len(doc_id_arr)
         w1 = qf / (qf + 1.2)
-        w3 = math.log2((tot - df + 0.1) / (df + 0.1))
+        w3 = math.log2((tot - df + 1e-9) / (df + 1e-9))
         print(token, df, qf)
         for i in range(len(doc_id_arr)):
             doc_id, tf = doc_id_arr[i], tf_arr[i]
@@ -287,6 +291,8 @@ def worker(id, config, input, output):
                     indices = boolean_solve(query, (c, tot))
                 elif ty == 'Ranked':
                     indices = rank_search(query, (c, tot))
+                print(f"id = {id}, query = {query}, count = {len(indices)}")
                 output.put(indices)
             except Exception as e:
+                print(f"id = {id}, query = {query}, error = {e}")
                 output.put(e)

@@ -86,7 +86,7 @@ class SortedIndex:
         else:
             if other.comp:
                 # A OR NOT B -> NOT (B - A)
-                merge_sorted_list_and_not_inplace(self.other, self)
+                merge_sorted_list_and_not_inplace(other.array, self.array)
                 self.comp = True
             else:
                 # A OR B

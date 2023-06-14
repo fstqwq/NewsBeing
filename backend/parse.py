@@ -29,7 +29,7 @@ def make_token(token):
     return lemmatize(token)
 
 def split_tokens(expr : str):
-    return re.findall(r'\(|\)|\w+', expr)
+    return re.findall(r'\[|\]|\(|\)|\w+', expr)
 
 op_prec = {
     'AND': 2,
@@ -73,8 +73,10 @@ def boolean_parse(expr: str):
         if len(ops) > 0 or len(operands) != 1:
             raise ValueError('Illegeal expression')
         return operands[0]
-    else:
+    elif len(expr) >= 2 and expr[0] == '[' and expr[-1] == ']' and '[' not in expr[1:-1] and ']' not in expr[1:-1]:
         if len(tokens) == 1:
             return tokens[0]
         else:
             return ('AND', tokens)
+    else:
+        raise ValueError('Illegeal expression')

@@ -2,6 +2,22 @@
 
 ... or New Bing SE.
 
+## Usage
+
+### Search Query
+
+If you want to start a Ranked search, simply type the query as you use google.
+
+If you want to use the Boolean query, use one of the following method:
+
+1. `(EXPRESSION)` where expression must be valid expression using `AND`, `OR`, `NOT` or `()`.
+If you want to query these three keywords, use the lowercase form. Example: `(car AND buy AND NOT rent)`
+2. `[KEYWORD(1) KEYWORD(2) .... KEYWORD(n)]` where all keywords are combined with operator `AND`. Example: `[Cyberpunk 2077 CD Project Red]`
+
+### Q&A
+
+TBD
+
 
 ## Requirement
 
@@ -18,49 +34,75 @@ python backend/init_nltk.py
 
 See `web/README.md`.
 
-## Database preparation
+
+
+
+### Database preparation
 
 1. Download Dataset: https://huggingface.co/datasets/allenai/c4/tree/main/realnewslike
 2. Unzip JSON files into data/, modify the config.json if needed.
 
-## Frontend Backend Interface
+### Frontend Backend Interface
 
 1. POST /search 
    
 Input: 
 
 ```json
-    {
-        "type": "TYPE_STRING", // "Boolean" or "Ranked"
-        "query": "QUERY_STRING"
-    }
+{
+    "query": "QUERY_STRING"
+}
 ```
 
 Output:
 
 ```json
-    {
-        "code": 200, // or others as error code,
-        "msg": "MSG_STRING", // this is optional
-        "cnt" : 114, // this is optional 
-        "result": [
-            {
-                "url": "URL_STRING", 
-                "text": "TEXT_STRING", 
-                "timestamp": "TIMESTAMP_STRING"
-            },
-        ],
-        "summary": [ // this is optional
-            {
-                "text": "TEXT_STRING",
-                "related": ["RELATED_LINK_A", "RELATED_LINK_B"]
-            }
-        ],
-        "qa": { // this is optional
-            "answer": "ANSWER_TEXT",
+{
+    "code": 200, /* or others as error code */
+    "msg": "OK", /* or error */
+    "type": "TYPE_STRING", /* Boolean or Ranked */
+    "cnt" : 114,
+    "result": [
+        {
+            "url": "URL_STRING", 
+            "text": "TEXT_STRING", 
+            "timestamp": "TIMESTAMP_STRING"
+        },
+    ],
+    "summary": [ /* optional */
+        {
+            "text": "TEXT_STRING",
             "related": ["RELATED_LINK_A", "RELATED_LINK_B"]
         }
-    }
+    ]
+}
+```
+
+2. POST /qa
+
+Input: 
+
+```json
+{
+    "question" : "QUESTION_STRING",
+    "query": "QUERY_STRING"
+}
+```
+
+Output:
+
+```json
+{
+    "code": 200, /* or others as error code */
+    "msg": "OK", 
+    "cnt" : 114,
+    "qa" :  [ /* optional */
+        {
+            "text": "TEXT_STRING",
+            "related": ["RELATED_LINK_A", "RELATED_LINK_B"]
+        }
+    ]
+}
 ```
 
 ## Copy of the Project Requirement

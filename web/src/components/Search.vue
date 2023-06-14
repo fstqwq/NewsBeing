@@ -1,7 +1,8 @@
 <template>
     <div class="search">
         <a-input-search placeholder="input search text" enter-button @search="onSearch" style="width: 80%; margin-top: 20px;"/>
-        <a-row style="margin-top: 20px; font-size: 150%; margin-left: -175px;">Total {{ totalResult }} Results found. {{ latency }} second.</a-row>
+        <a-row style="margin-top: 20px; font-size: 150%; margin-left: -175px;" v-if="code === 200">{{ type }} search: {{ totalResult }} results in {{ latency }} second.</a-row>
+        <a-row style="margin-top: 20px; font-size: 150%; margin-left: -175px;" v-if="code !== 0 && code != 200">{{ code}} Error: {{ msg }}.</a-row>
         <a-row type="flex" justify="center">
             <a-col :span="8">
                 <a-collapse v-model="activeKey1" style="width: 90%; margin-top: 20px; font-size: 125%;">
@@ -113,6 +114,9 @@ export default {
             summary: [],
             qa: {},
             latency: 0,
+            type: '',
+            code: 0,
+            msg: 'Initialize'
         }
     },
     mounted() {
@@ -121,8 +125,7 @@ export default {
     name: 'Search',
     methods: {
         onSearch(value) {
-            if (value.includes('Boolean ')) this.getData("Boolean", value.substr(8, value.length - 8))
-            else this.getData("Ranked", value)
+            this.getData('query', value)
         },
         getData(type, query) {
             this.loading = true
@@ -130,18 +133,28 @@ export default {
             console.log('input', input)
             axios.post('http://127.0.0.1:5000/search', input).then(res => {
                 console.log(res)
-                this.result = res.data.result
-                this.latency = res.data.time
-                this.totalResult = res.data.cnt
-                if (typeof(res.data.summary) == 'undefined') {
+                this.code = res.data.code
+                this.msg = res.data.msg
+                if (res.data.code != 200) {
+                    this.result = []
+                    this.totalResult = 0
                     this.summary = []
-                } else {
-                    this.summary = res.data.summary
-                }
-                if (typeof(res.data.qa) == 'undefined') {
                     this.qa = {}
                 } else {
-                    this.qa = res.data.qa
+                    this.result = res.data.result
+                    this.latency = res.data.time
+                    this.type = res.data.type
+                    this.totalResult = res.data.cnt
+                    if (typeof(res.data.summary) == 'undefined') {
+                        this.summary = []
+                    } else {
+                        this.summary = res.data.summary
+                    }
+                    if (typeof(res.data.qa) == 'undefined') {
+                        this.qa = {}
+                    } else {
+                        this.qa = res.data.qa
+                    }
                 }
                 this.resultShown = []
                 this.loading = false
