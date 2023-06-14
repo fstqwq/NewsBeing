@@ -2,17 +2,17 @@
   <a-layout id="components-layout-demo-side" style="min-height: 100vh">
     <a-layout-sider v-model="collapsed" collapsible>
       <div class="logo">
-          NEWSBEING
+          News Being
       </div>
       <a-menu theme="dark" :default-selected-keys="['1']" mode="inline">
         <a-menu-item key="1" @click="toSearch()">
           <a-icon type="desktop" />
           <span>Search</span>
         </a-menu-item>
-        <a-menu-item key="2" @click="toHello()">
+        <!-- <a-menu-item key="2" @click="toHello()">
           <a-icon type="desktop" />
           <span>Hello</span>
-        </a-menu-item>
+        </a-menu-item> -->
       </a-menu>
     </a-layout-sider>
     <a-layout>
@@ -21,7 +21,8 @@
         <Search></Search>
       </a-layout-content>
       <a-layout-footer style="text-align: center">
-        Ant Design ©2018 Created by Ant UED
+        NewsBeing ©2023 Created by 杨宗翰, 吕优, 傅凌玥, 刘遇时 <br>
+        UI Powered by Ant Design
       </a-layout-footer>
     </a-layout>
   </a-layout>

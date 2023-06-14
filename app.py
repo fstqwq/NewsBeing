@@ -8,6 +8,7 @@ from datetime import datetime
 
 from backend.api import *
 from config import *
+from backend.parse import highlight_doc
 
 app = Flask(__name__)
 CORS(app, resources=r'/*')
@@ -40,13 +41,13 @@ def issue_query(query : str):
             elif failed is not None:
                 continue
             tot += len(indices)
-            results.extend([(i, x) for x in indices.extract(200)])
+            results.extend([(i, x) for x in indices.extract(100)])
         if failed is not None:
             return {
                 "code": 400,
-                "msg": f"FAIL: {repr(failed)}"
+                "msg": f"FAIL: {str(failed)}"
             }
-        result_docs = [doc_to_dict(fetch_doc_global_id(doc_id, config)) for doc_id in results[:200]]
+        result_docs = [highlight_doc(doc_to_dict(fetch_doc_global_id(doc_id, config)), query.replace('AND', '').replace('NOT', '').replace('OR', '')) for doc_id in results[:200]]
         return {
             "code": 200,
             "msg": f"OK: count = {tot}",
@@ -67,7 +68,7 @@ def issue_query(query : str):
             elif failed is not None:
                 continue
             tot += len(indices)
-            results.extend([(i, x) for x in indices[:200]])
+            results.extend([(i, x) for x in indices[:100]])
         if failed is not None:
             return {
                 "code": 400,
@@ -76,13 +77,13 @@ def issue_query(query : str):
         sorted_results = sorted(results, key = lambda d: d[1][1], reverse = True)    
         freshness = {}
         final_result = {}
-        for group, (doc_id, score) in sorted_results[:200]:
+        for group, (doc_id, score) in sorted_results[:100]:
             doc = fetch_doc_global_id((group, doc_id), config)
             #print(doc_id, score)
             final_result[(group, doc_id)] = doc
             freshness[(group, doc_id)] = math.log2(score + 1e-9) + 0.5 / (nowtime - doc[2])
         sorted_results = sorted(freshness.items(), key = lambda d: d[1], reverse = True)
-        result_docs = [doc_to_dict(final_result[(group, doc_id)]) for (group, doc_id), score in sorted_results[:200]]    
+        result_docs = [highlight_doc(doc_to_dict(final_result[(group, doc_id)]), query) for (group, doc_id), score in sorted_results[:200]]    
         return {
             "code": 200,
             "msg": f"OK: count = {tot}",

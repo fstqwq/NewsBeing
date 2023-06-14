@@ -164,10 +164,10 @@ def fetch_doc(id : int, c : sqlite3.Cursor) -> Tuple[str, str, int]:
     return c.fetchone()
 
 def doc_to_dict(doc : Tuple[str, str, int]) -> str:
-    return {'url': doc[0], 'text': doc[1], 'timestamp': datetime.fromtimestamp(doc[2]).isoformat()}
+    return {'url': doc[0], 'text': doc[1], 'timestamp': datetime.fromtimestamp(doc[2]).isoformat(sep=' ')}
 
 @lru_cache(maxsize=512)
-def fetch_doc_global_id_path(global_id, dbpath, dbfile) -> Tuple[str, str, int]:
+def fetch_doc_global_id_dbfile(global_id, dbfile) -> Tuple[str, str, int]:
     with sqlite3.connect(dbfile) as conn:
         conn = sqlite3.connect(dbfile)
         c = conn.cursor()
@@ -180,7 +180,9 @@ def fetch_doc_global_id(global_id, config : dict) -> Tuple[str, str, int]:
     """
     dbpath = config['dbpath']
     dbfile = os.path.join(dbpath, config['name'] + f"-{global_id[0]}.db")
-    return fetch_doc_global_id_path(global_id, dbpath, dbfile)
+    ret = doc_to_dict(fetch_doc_global_id_dbfile(global_id, dbfile))
+    ret['global_id'] = global_id
+    return fetch_doc_global_id_dbfile(global_id, dbfile)
 
 
 def fetch_tree(expr, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:

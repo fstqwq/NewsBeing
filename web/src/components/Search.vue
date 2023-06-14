@@ -1,9 +1,27 @@
 <template>
     <div class="search">
-        <a-input-search placeholder="input search text" enter-button @search="onSearch" style="width: 80%; margin-top: 20px;"/>
-        <a-row style="margin-top: 20px; font-size: 150%; margin-left: -175px;" v-if="code === 200">{{ type }} search: {{ totalResult }} results in {{ latency }} second.</a-row>
-        <a-row style="margin-top: 20px; font-size: 150%; margin-left: -175px;" v-if="code !== 0 && code != 200">{{ code}} Error: {{ msg }}.</a-row>
+        <!-- Print Header -->
         <a-row type="flex" justify="center">
+            <a-col :span="12">
+                <a-row type="flex" justify="center" style="margin: 20px">
+                    <a-col :span="16" style="text-align: center;">
+                        <a-tag style="font-size: 200%; padding: 10px;"><span style="color: #1890ff;">New</span><span style="color: #52c41a;">s</span> <span style="color: #1890ff;">B</span><span style="color: #52c41a;">e</span><span style="color: #1890ff;">ing</span></a-tag>
+                    </a-col>
+                </a-row>
+            </a-col>
+        </a-row>
+        <a-row type="flex" justify="center">
+            <a-col :span="10">
+            <a-row>
+            Current Search Type: &nbsp;
+            <a-tag color="blue" style="font-size: 100%; font-family: 'Consolas', 'Courier New', monospace;" v-if="isBoolean">Boolean</a-tag>
+            <a-tag color="green" style="font-size: 100%; font-family: 'Consolas', 'Courier New', monospace;" v-else>Ranked</a-tag>
+            <a-input-search class="red--text" placeholder="Enter query here..." enter-button @search="onSearch" @change="handleInput" style="width: 100%; margin-top: 20px;"/>
+            </a-row>
+            </a-col>
+        </a-row>
+            <a-tag type="flex" justify="center" v-if="code !== 0 && code != 200" color="red">{{ code}} {{ msg }}.</a-tag>
+        <!--<a-row type="flex" justify="center">
             <a-col :span="8">
                 <a-collapse v-model="activeKey1" style="width: 90%; margin-top: 20px; font-size: 125%;">
                     <a-collapse-panel :key="index.toString()" :header="'Summarization ' + (index + 1).toString()" v-for="(item, index) in summary" >
@@ -32,8 +50,16 @@
                     </a-collapse-panel>
                 </a-collapse>
             </a-col>
+        </a-row>-->
+        <!-- a long split horizontal line -->
+        <a-row type="flex" justify="center">
+            <a-col :span="20">
+                <a-divider style="margin-top: 20px; margin-bottom: 20px;"></a-divider>
+            </a-col>
         </a-row>
         <a-row type="flex" justify="center">
+            
+        <a-col type="flex" justify="start" v-if="code === 200">{{ type }} search: {{ totalResult }} results in {{ latency }} second.</a-col>
         <a-list
             class="demo-loadmore-list"
             :loading="loading"
@@ -49,16 +75,16 @@
             >
                 <a-spin v-if="loadingMore" />
                 <a-button v-else @click="onLoadMore">
-                    loading more
+                    More...
                 </a-button>
             </div>
             <a-list-item slot="renderItem" slot-scope="item, index">
                 <a-list-item-meta
                 >
-                    <a-row slot="title" style="font-size: 125%;" type="flex" justify="start">
-                        <a-col :span="9.5" style="text-align: start;">
+                    <a-row slot="title" type="flex" justify="start">
+                        <a-col :span="9.5" style="text-align: start;font-size: 125%;">
                             <a-tag color="blue" style="font-size: 100%;">
-                                <a :href="item.url" style="color: rgb(45, 183, 245);">{{ item.url }}</a>
+                                <a :href="item.url" style="color: rgb(45, 183, 245);">{{ getHostname(item.url) }}</a>
                             </a-tag>
                         </a-col>
                         <a-col :span="7" style="text-align: start; margin-right: 30px;">
@@ -69,7 +95,7 @@
                     <a-button size="large" slot="avatar" style="margin-top: 5px;">
                         {{ index+1 }}
                     </a-button>
-                    <div slot="description" style="text-align: start;">{{ item.text.substr(0, 720) + '...' }}</div>
+                    <div slot="description" style="text-align: start;"><div v-html="item.brief"></div></div>
                 </a-list-item-meta>
                 <div style="width: 200px;">
                     <a-button type="primary" @click="showDrawer(index)">
@@ -83,7 +109,18 @@
                         @close="closeDrawer"
                         width="800"
                         >
-                            <p>{{ drawerText }}</p>
+                        <div style="text-align: start; font-family: Consolas, 'Courier New', monospace;">
+                            <strong>Link:</strong>&nbsp;&nbsp;
+                            <a-tag color="blue" style="font-size: 100%;">
+                                <a :href="drawerUrl" style="color: rgb(45, 183, 245);">{{ drawerUrl.substring(0, 50) + (drawerUrl.length > 50 ? '...' : '') }}</a>
+                            </a-tag>
+                            <br/>
+                            <strong>Time:</strong>&nbsp;&nbsp;
+                            <a-tag color="cyan" style="font-size: 100%">{{ drawerTimestamp }}</a-tag>
+                            <br/>
+                            <strong>Body:</strong>
+                        </div>
+                        <div v-html="drawerText"></div>
                     </a-drawer>
                 </div>
             <!-- <div>{{ item.text }}</div> -->
@@ -101,9 +138,11 @@ export default {
         return {
             loading: true,
             loadingMore: false,
-            showLoadingMore: true,
+            showLoadingMore: false,
             drawerVisible: false,
             drawerText: '',
+            drawerUrl: '',
+            drawerTimestamp: '',
             totalResults: 0,
             activeKey1: [],
             activeKey2: [],
@@ -111,12 +150,13 @@ export default {
             resultShown: [],
             totalResult: 0,
             pageSize: 5,
-            summary: [],
+            summary: ['test'],
             qa: {},
             latency: 0,
             type: '',
             code: 0,
-            msg: 'Initialize'
+            msg: 'Initialize',
+            isBoolean: false
         }
     },
     mounted() {
@@ -207,14 +247,31 @@ export default {
         },
         onLoadMore() {
             this.resultShown = (this.resultShown.length + this.pageSize <= this.result.length) ? this.result.slice(0, this.resultShown.length + this.pageSize) : this.result
+            this.showLoadingMore = this.resultShown.length < this.result.length
         },
         showDrawer(index) {
             this.drawerVisible = true
+            this.drawerUrl = this.result[index].url
+            this.drawerTimestamp = this.result[index].timestamp
             this.drawerText = this.result[index].text
         },
         closeDrawer(item) {
             console.log(item)
             this.drawerVisible = false
+        },
+        handleInput(value) {
+            setTimeout((target) => {
+                let query = target._value
+                if (query.length > 1 && (query[0] == '(' && query[query.length - 1] == ')') || (query[0] == '[' && query[query.length - 1] == ']')) {
+                    this.isBoolean = true
+                } else {
+                    this.isBoolean = false
+                }
+            }, 0, value.target)
+        },
+        getHostname(url) {
+            const hostname = new URL(url).hostname;
+            return hostname;
         }
     }
 }

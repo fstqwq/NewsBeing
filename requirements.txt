@@ -3,3 +3,4 @@ nltk
 flask
 numcompress
 flask_cors
+yattag

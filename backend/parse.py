@@ -73,10 +73,62 @@ def boolean_parse(expr: str):
         if len(ops) > 0 or len(operands) != 1:
             raise ValueError('Illegeal expression')
         return operands[0]
-    elif len(expr) >= 2 and expr[0] == '[' and expr[-1] == ']' and '[' not in expr[1:-1] and ']' not in expr[1:-1]:
+    elif len(expr) >= 2 and expr[0] == '[' and expr[-1] == ']' and '[' not in expr[1:-1] and ']':
         if len(tokens) == 1:
             return tokens[0]
         else:
             return ('AND', tokens)
     else:
         raise ValueError('Illegeal expression')
+    
+from yattag import Doc
+from typing import Dict, List
+
+def highlight_doc(doc_dict : Dict, query : str):
+
+    keywords = set(lemmatize(i) for i in word_tokenize(query.lower()) if len(i) > 0 and i not in punctuations)
+
+    doc, tag, text = Doc().tagtext()
+    bdoc, btag, btext = Doc().tagtext()
+    lines = doc_dict['text'].split('\n')
+    has_highlight = False
+    bcount = 0
+    for line in lines:
+        with tag('p'):
+            for token in line.split():
+                if not has_highlight and any(i in punctuations for i in token):
+                    bdoc, btag, btext = Doc().tagtext() # clear
+                    if bcount != 0:
+                        btext('...')
+                        bcount = 0
+                filterd_token = lemmatize(''.join([i for i in token.lower() if i not in punctuations]))
+                if filterd_token in keywords:
+                    has_highlight = True
+                    if bcount < 200:
+                        with btag('mark'):
+                            btext(token)
+                        btext(' ')
+                    with tag('mark'):
+                        text(token)
+                    text(' ')
+                else:
+                    if bcount < 200:
+                        btext(token)
+                        btext(' ')
+                    text(token)
+                    text(' ')
+                bcount += 1
+        
+        if not has_highlight:
+            bdoc, btag, btext = Doc().tagtext() # clear
+            if bcount != 0:
+                bcount = 0
+                btext('...')
+        
+        
+        flag = True
+    if bcount > 200:
+        btext('...')
+    doc_dict['text'] = doc.getvalue()
+    doc_dict['brief'] = bdoc.getvalue()
+    return doc_dict
