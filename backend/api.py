@@ -110,9 +110,6 @@ def preprocess_worker(id, config, gen_inverted_index = True):
                 # doc_id_arr = numpy.array(token_doc_id[token], dtype=numpy.int32) # Uncompressed
                 # tf_arr = numpy.array(token_tf[token], dtype=numpy.float32) # Uncompressed
                 doc_id_arr = token_doc_id[token] # Compressed
-                if len(doc_id_arr) > 1:
-                    for i in range(len(doc_id_arr) - 1, 0, -1):
-                        doc_id_arr[i] -= doc_id_arr[i - 1] # Difference
                 doc_id_arr = numcompress.compress(doc_id_arr)
                 tf_arr = numcompress.compress(token_tf[token]) # Compressed
                 c.execute('INSERT INTO inverted_index VALUES (?, ?, ?, ?)', (token, doc_id_arr.encode(), tf_arr.encode(), i))
@@ -144,8 +141,6 @@ def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> Sorted
     for item in ret:
         # doc_id_arr.extend(numpy.frombuffer(item[0], dtype=numpy.int32).tolist()) # Uncompressed
         arr = [int(item) for item in numcompress.decompress(item[0].decode())] # Compressed
-        for i in range(1, len(arr)):
-            arr[i] += arr[i - 1] # Difference
         doc_id_arr.extend(arr) # Compressed
     result = SortedIndex(doc_id_arr, tot, False)
     # end = time.time()
@@ -222,8 +217,6 @@ def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
             # doc_id_arr.extend(numpy.frombuffer(item[0], dtype=numpy.int32).tolist()) # Uncompressed
             # tf_arr.extend(numpy.frombuffer(item[1], dtype=numpy.float32).tolist()) # Uncompressed
             arr = [int(item) for item in numcompress.decompress(item[0].decode())] # Compressed
-            for i in range(1, len(arr)):
-                arr[i] += arr[i - 1] # Difference
             doc_id_arr.extend(arr) # Compressed
             tf_arr.extend(numcompress.decompress(item[1].decode())) # Compressed
         # tmp = c.fetchall()

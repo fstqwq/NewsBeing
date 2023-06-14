@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, url_for, jsonify
+from flask_cors import CORS
 import json
 from multiprocessing import Pool, Manager
 import time
@@ -9,10 +10,11 @@ from backend.api import *
 from config import *
 
 app = Flask(__name__)
-
+CORS(app, resources=r'/*')
 
 @app.route('/search', methods=['POST'])
 def search():
+    start = time.time()
     ty = request.json['type']
     query = request.json['query']
     if ty != 'Boolean' and ty != 'Ranked':
@@ -43,26 +45,27 @@ def search():
             elif failed is not None:
                 continue
             tot += len(indices)
-            results.extend([(i, x) for x in indices.extract(10)])
+            results.extend([(i, x) for x in indices.extract(200)])
             print(f"Result {i}... {time.time() - begin}")
         if failed is not None:
             return {
                 "code": 400,
                 "msg": f"FAIL: {repr(failed)}"
             }
-        result_docs = [doc_to_dict(fetch_doc_global_id(doc_id, config)) for doc_id in results[:10]]
+        result_docs = [doc_to_dict(fetch_doc_global_id(doc_id, config)) for doc_id in results[:200]]
         print(f"Done fetching ... {time.time() - begin}")
         return {
             "code": 200,
             "msg": f"OK: count = {tot}",
             "cnt" : tot,
-            "result": result_docs
+            "result": result_docs,
+            'time': time.time() - start
         }
     if ty == 'Ranked':
         failed = None
         timecurrent = "2022-06-16T12:00:00Z"
         format_str = '%Y-%m-%dT%H:%M:%SZ'
-        nowtime = datetime.strptime(timecurrent format_str).timestamp()
+        nowtime = datetime.strptime(timecurrent, format_str).timestamp()
         for i in range(config['num_worker']):
             indices = response_queues[i].get()
             if isinstance(indices, Exception):
@@ -71,7 +74,7 @@ def search():
             elif failed is not None:
                 continue
             tot += len(indices)
-            results.extend([(i, x) for x in indices[:10]])
+            results.extend([(i, x) for x in indices[:200]])
             print(f"Result {i}... {time.time() - begin}")
         if failed is not None:
             return {
@@ -81,18 +84,19 @@ def search():
         sorted_results = sorted(results, key = lambda d: d[1][1], reverse = True)    
         freshness = {}
         final_result = {}
-        for group, (doc_id, score) in sorted_results[:10]:
+        for group, (doc_id, score) in sorted_results[:200]:
             doc = fetch_doc_global_id((group, doc_id), config)
             final_result[(group, doc_id)] = doc
             freshness[(group, doc_id)] = math.log2(score) + 0.5 / (nowtime - doc[2])
         sorted_results = sorted(freshness.items(), key = lambda d: d[1], reverse = True)
-        result_docs = [doc_to_dict(final_result[(group, doc_id)]) for (group, doc_id), score in sorted_results[:10]]    
+        result_docs = [doc_to_dict(final_result[(group, doc_id)]) for (group, doc_id), score in sorted_results[:200]]    
         print(f"Done fetching ... {time.time() - begin}")
         return {
             "code": 200,
             "msg": f"OK: count = {tot}",
             "cnt" : tot,
-            "result": result_docs
+            "result": result_docs,
+            'time': time.time() - start
         }
 
 
