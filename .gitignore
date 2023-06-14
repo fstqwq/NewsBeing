@@ -6,3 +6,4 @@ __pycache__
 *.dll
 *.o
 .vscode
+.DS_Store
