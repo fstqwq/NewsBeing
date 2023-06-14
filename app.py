@@ -66,8 +66,9 @@ def issue_query(ty, query):
         final_result = {}
         for group, (doc_id, score) in sorted_results[:200]:
             doc = fetch_doc_global_id((group, doc_id), config)
+            #print(doc_id, score)
             final_result[(group, doc_id)] = doc
-            freshness[(group, doc_id)] = math.log2(score) + 0.5 / (nowtime - doc[2])
+            freshness[(group, doc_id)] = math.log2(score + 0.1) + 0.5 / (nowtime - doc[2])
         sorted_results = sorted(freshness.items(), key = lambda d: d[1], reverse = True)
         result_docs = [doc_to_dict(final_result[(group, doc_id)]) for (group, doc_id), score in sorted_results[:200]]    
         return {

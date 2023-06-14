@@ -65,7 +65,7 @@ if __name__ == "__main__":
     #test rank search 
     print('======Test Rank Search======')
     start = time.time()
-    query = "google assistant"
+    query = "fuck you"
     result = rank_search(query, cc)
     sorted_results = [(0, x) for x in result[:10]]
     timecurrent = "2022-06-16T12:00:00Z"

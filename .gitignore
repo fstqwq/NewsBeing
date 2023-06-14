@@ -6,3 +6,9 @@ __pycache__
 *.dll
 *.o
 .vscode
+data/.DS_Store
+data/db/.DS_Store
+web/.DS_Store
+.DS_Store
+backend/.DS_Store
+backend/.DS_Store

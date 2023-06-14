@@ -243,7 +243,7 @@ def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
         # df = len(tmp)
         df = len(doc_id_arr)
         w1 = qf / (qf + 1.2)
-        w3 = math.log2((tot - df + 0.5) / (df + 0.5))
+        w3 = math.log2((tot - df + 0.1) / (df + 0.1))
         print(token, df, qf)
         for i in range(len(doc_id_arr)):
             doc_id, tf = doc_id_arr[i], tf_arr[i]
