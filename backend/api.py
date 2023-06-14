@@ -136,6 +136,7 @@ def preprocess(config):
     pool.starmap(preprocess_worker, [(i, config) for i in range(num_worker)])
     print("End time: " + str(datetime.now()))
 
+@lru_cache(maxsize=512)
 def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
     if token == '':
         return SortedIndex([], tot, True)
@@ -204,6 +205,14 @@ def boolean_solve(expr : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
     indices = fetch_tree(tree, cc)
     return indices
 
+@lru_cache(maxsize=512)
+def fetch_ranked_list_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> List:
+    c, tot = cc
+    c.execute("SELECT doc_id, tf, version FROM inverted_index WHERE token=?", (token,))
+    ret = sorted(c.fetchall(), key=lambda x: x[2])
+    return ret
+
+@lru_cache(maxsize=512)
 def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
     c, tot = cc
     result = {}
@@ -220,8 +229,7 @@ def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
     tokens = set(words)
     for token in tokens:
         qf = dic[token] / cnt
-        c.execute("SELECT doc_id, tf, version FROM inverted_index WHERE token=?", (token,))
-        ret = sorted(c.fetchall(), key=lambda x: x[2])
+        ret = fetch_ranked_list_by_token(token, cc) 
         doc_id_arr, tf_arr = [], []
         for item in ret:
             # doc_id_arr.extend(numpy.frombuffer(item[0], dtype=numpy.int32).tolist()) # Uncompressed

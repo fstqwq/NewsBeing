@@ -190,9 +190,9 @@ export default {
             // }
         },
         onLoadMore() {
-            setTimeout(() => {
+            /* setTimeout(() => { */
                 this.resultShown = (this.resultShown.length + this.pageSize <= this.result.length) ? this.result.slice(0, this.resultShown.length + this.pageSize) : this.result
-            }, Math.random() * 500 + 500)
+            /*}, Math.random() * 500 + 500) */
         },
         showDrawer(index) {
             this.drawerVisible = true
