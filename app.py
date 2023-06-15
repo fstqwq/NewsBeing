@@ -96,6 +96,7 @@ def issue_query(query : str):
         assert False
 
 
+DUMMY = "I’m sorry but I prefer not to continue this conversation. I’m still learning so I appreciate your understanding and patience.🙏"
 @lru_cache(maxsize=512)
 def issue_summary(query):
     try:
@@ -104,16 +105,36 @@ def issue_summary(query):
             summary = response_queues[-1].get()
             return True, summary
         else:
-            return True, 'AI not started.'
+            return True, {'summary_text': DUMMY}
     except Exception as e:
-        return False, str(e)
+        return False, {'summary_text': str(e)}
 
 @lru_cache(maxsize=512)
-def issue_qa(query):
+def issue_qa(question, context):
+    try:
+        if 'ai_enable' in config and config['ai_enable']:
+            query_queues[-1].put(('qa', (question, context)))
+            answer = response_queues[-1].get()
+            return True, answer
+        else:
+            return True, {"answer" : DUMMY}
+    except Exception as e:
+        return False, {"answer" : str(e)}
+
+@app.route('/qa', methods=['POST'])
+def qa():
+    question = request.json['question']
+    context = request.json['context']
+    begin = time.time()
+    status, answer = issue_qa(question, context) 
+    end = time.time()
+    if not status:
+        issue_qa.cache_clear()
+    answer['time'] = f"{end - begin : .4f}"
     return {
         "code": 200,
         "msg": "OK",
-        "result": "I’m sorry but I prefer not to continue this conversation. I’m still learning so I appreciate your understanding and patience.🙏"
+        "answer": answer
     }
 
 @app.route('/summary', methods=['POST'])
@@ -123,17 +144,22 @@ def summary():
         search_result['summary'] = 'Nothing to summarize'
         return search_result
     docs = [x['text'] for x in result]
+    begin = time.time()
     status, summary = issue_summary(tuple(docs[:5]))
+    end = time.time()
     if not status:
         issue_summary.cache_clear()
-    search_result['summary'] = summary
-    return search_result
+    summary['time'] = f"{end - begin : .4f}"
+    return {
+            "code": 200,
+            "msg": "OK",
+            "summary": summary,
+        }
 
 @app.route('/search', methods=['POST'])
 def search():
-    start = time.time()
     # ty = request.json['type']
-    if query not in request.json:
+    if 'query' not in request.json:
         return {
             "code": 400,
             "msg": "FAIL: Empty query"
@@ -200,8 +226,6 @@ if __name__ == "__main__":
     app.run(debug=True, use_reloader=False, host='127.0.0.1', port=5000, threaded=False)
     import signal
     def on_exit(signum, frame):
-        for i in range(config['num_worker']):
-            query_queues[i].put(('bye', None))
         exit(0)
     signal.signal(signal.SIGINT, on_exit)
 

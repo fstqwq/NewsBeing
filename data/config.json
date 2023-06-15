@@ -6,7 +6,7 @@
     "jsonpath" : "data/realnewslike",
     "num_worker" : 16,
     "summary_path" : "ai/PRIMERA-multinews",
-    "qa_path" : "ai/Bert/bert-base-uncased",
+    "qa_path" : "ai/roberta-large-squad2",
     "ai_enable" : true,
     "jsonfiles": [
         "c4-train.00000-of-00512.json",

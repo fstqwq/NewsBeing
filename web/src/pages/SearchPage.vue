@@ -2,7 +2,7 @@
   <a-layout id="components-layout-demo-side" style="min-height: 100vh">
     <a-layout-sider v-model="collapsed" collapsible>
       <div class="logo">
-          News Being
+          <span style="color: #1890ff;">New</span><span style="color: #52c41a;">s</span> <span style="color: #1890ff;">B</span><span style="color: #52c41a;">e</span><span style="color: #1890ff;">ing</span>      
       </div>
       <a-menu theme="dark" :default-selected-keys="['1']" mode="inline">
         <a-menu-item key="1" @click="toSearch()">
@@ -16,7 +16,6 @@
       </a-menu>
     </a-layout-sider>
     <a-layout>
-      <a-layout-header style="background: #fff; padding: 0" />
       <a-layout-content style="margin: 0 16px">
         <Search></Search>
       </a-layout-content>
