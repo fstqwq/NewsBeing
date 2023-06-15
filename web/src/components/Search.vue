@@ -26,6 +26,9 @@
             </a-popover>
             </template>
             <a-input-search placeholder="Enter query here..." enter-button @search="onSearch" @change="handleInput" style="width: 100%; margin-top: 20px;"/>
+            </a-popover>
+            </template>
+            <a-input-search placeholder="Enter query here..." enter-button @search="onSearch" @change="handleInput" style="width: 100%; margin-top: 20px;"/>
             </a-row>
             </a-col>
         </a-row>
@@ -186,13 +189,12 @@ export default {
     name: 'Search',
     methods: {
         onSearch(value) {
-            /*this.$router.push({
+            this.$router.push({
                 path: '/search',
                 query: {
                     query: value
                 }
-            })*/
-            this.getData('query', value)
+            })
         },
         getData(type, query) {
             this.loading = true
