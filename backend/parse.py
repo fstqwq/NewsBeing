@@ -129,6 +129,6 @@ def highlight_doc(doc_dict : Dict, query : str):
         flag = True
     if bcount > 200:
         btext('...')
-    doc_dict['text'] = doc.getvalue()
+    doc_dict['body'] = doc.getvalue()
     doc_dict['brief'] = bdoc.getvalue()
     return doc_dict

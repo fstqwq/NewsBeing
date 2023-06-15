@@ -14,9 +14,18 @@
             <a-col :span="10">
             <a-row>
             Current Search Type: &nbsp;
-            <a-tag color="blue" style="font-size: 100%; font-family: 'Consolas', 'Courier New', monospace;" v-if="isBoolean">Boolean</a-tag>
+            <template>
+            <a-popover>
+                <template #content>
+                <p>To activate the Boolean query, use</p>
+                <pre>(expr)</pre>
+                <pre>[keywords]</pre>
+                </template>
+                <a-tag color="blue" style="font-size: 100%; font-family: 'Consolas', 'Courier New', monospace;" v-if="isBoolean">Boolean</a-tag>
             <a-tag color="green" style="font-size: 100%; font-family: 'Consolas', 'Courier New', monospace;" v-else>Ranked</a-tag>
-            <a-input-search v-model="searchContent" class="red--text" placeholder="Enter query here..." enter-button @search="onSearch" @change="handleInput" style="width: 100%; margin-top: 20px;"/>
+            </a-popover>
+            </template>
+            <a-input-search placeholder="Enter query here..." enter-button @search="onSearch" @change="handleInput" style="width: 100%; margin-top: 20px;"/>
             </a-row>
             </a-col>
         </a-row>
@@ -55,6 +64,15 @@
         <a-row type="flex" justify="center">
             <a-col :span="20">
                 <a-divider style="margin-top: 20px; margin-bottom: 20px;"></a-divider>
+            </a-col>
+        </a-row>
+        <a-row type="flex" justify="center">
+            <a-col :span="10">
+                <a-card :loading="isLoadingSummary" title="Summarization">
+                    <p>
+                        {{summary}}
+                    </p>
+                </a-card>
             </a-col>
         </a-row>
         <a-row type="flex" justify="center" v-if="code === 200">{{ type }} search: {{ totalResult }} results in {{ latency }} second.</a-row>
@@ -136,6 +154,7 @@ export default {
     data(){
         return {
             loading: true,
+            isLoadingSummary : false,
             loadingMore: false,
             showLoadingMore: false,
             drawerVisible: false,
@@ -149,37 +168,32 @@ export default {
             resultShown: [],
             totalResult: 0,
             pageSize: 5,
-            summary: ['test'],
+            summary: "",
             qa: {},
             latency: 0,
             type: '',
             code: 0,
             msg: 'Initialize',
-            isBoolean: false,
-            searchContent: '',
+            isBoolean: false
         }
     },
     mounted() {
         this.loading = false;
     },
-    watch: {
-        $route(to, from) {
-            console.log(to, from)
-            this.getData('query', to.query.query)
-        }
-    },
     name: 'Search',
     methods: {
         onSearch(value) {
-            this.$router.push({
+            /*this.$router.push({
                 path: '/search',
                 query: {
                     query: value
                 }
-            })
+            })*/
+            this.getData('query', value)
         },
         getData(type, query) {
             this.loading = true
+            this.isLoadingSummary = true;
             var input = {'type': type, 'query': query}
             console.log('input', input)
             axios.post('http://127.0.0.1:5000/search', input).then(res => {
@@ -189,7 +203,7 @@ export default {
                 if (res.data.code != 200) {
                     this.result = []
                     this.totalResult = 0
-                    this.summary = []
+                    this.summary = ""
                     this.qa = {}
                 } else {
                     this.result = res.data.result
@@ -197,7 +211,7 @@ export default {
                     this.type = res.data.type
                     this.totalResult = res.data.cnt
                     if (typeof(res.data.summary) == 'undefined') {
-                        this.summary = []
+                        this.summary = ""
                     } else {
                         this.summary = res.data.summary
                     }
@@ -210,7 +224,27 @@ export default {
                 this.resultShown = []
                 this.loading = false
                 this.onLoadMore()
-                this.searchContent = ''
+                // if (res.data.type != 'Boolean')
+                {   
+                    // summarize
+                    axios.post('http://127.0.0.1:5000/summary', input).then(res => {
+                        this.code = res.data.code
+                        this.msg = res.data.msg
+                        if (res.data.code == 200) {
+                            if (typeof(res.data.summary) == 'undefined') {
+                                this.summary = ""
+                            } else {
+                                this.summary = res.data.summary
+                            }
+                            if (typeof(res.data.qa) == 'undefined') {
+                                this.qa = {}
+                            } else {
+                                this.qa = res.data.qa
+                            }
+                        }
+                        this.isLoadingSummary = false
+                    })
+                }
             })
             // var res = {
             //     "code": 200,

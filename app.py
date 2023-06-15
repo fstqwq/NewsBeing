@@ -9,9 +9,10 @@ from datetime import datetime
 from backend.api import *
 from config import *
 from backend.parse import highlight_doc
+from ai.api import *
 
 app = Flask(__name__)
-CORS(app, resources=r'/*')
+CORS(app, resources=r'*')
 
 @lru_cache(maxsize=512)
 def issue_query(query : str):
@@ -97,11 +98,15 @@ def issue_query(query : str):
 
 @lru_cache(maxsize=512)
 def issue_summary(query):
-    return {
-        "code": 200,
-        "msg": "OK",
-        "result": query
-    }
+    try:
+        if 'ai_enable' in config and config['ai_enable']:
+            query_queues[-1].put(('summary', query))
+            summary = response_queues[-1].get()
+            return True, summary
+        else:
+            return True, 'AI not started.'
+    except Exception as e:
+        return False, str(e)
 
 @lru_cache(maxsize=512)
 def issue_qa(query):
@@ -111,6 +116,18 @@ def issue_qa(query):
         "result": "I’m sorry but I prefer not to continue this conversation. I’m still learning so I appreciate your understanding and patience.🙏"
     }
 
+@app.route('/summary', methods=['POST'])
+def summary():
+    search_result = issue_query(request.json['query']) # should be in cache
+    if search_result['code'] != 200 or 'result' not in search_result or (result := search_result['result']) == []:
+        search_result['summary'] = 'Nothing to summarize'
+        return search_result
+    docs = [x['text'] for x in result]
+    status, summary = issue_summary(tuple(docs[:5]))
+    if not status:
+        issue_summary.cache_clear()
+    search_result['summary'] = summary
+    return search_result
 
 @app.route('/search', methods=['POST'])
 def search():
@@ -166,5 +183,20 @@ if __name__ == "__main__":
             workers.append(process)
             query_queues.append(q1)
             response_queues.append(q2)
+        if 'ai_enable' in config and config['ai_enable']:
+            print("Start AI worker")
+            q1 = manager.Queue()
+            q2 = manager.Queue()
+            process = multiprocessing.Process(target=ai_worker, args=(config, q1, q2))        
+            process.start()
+            workers.append(process)
+            query_queues.append(q1)
+            response_queues.append(q2)
     app.run(debug=True, use_reloader=False, host='127.0.0.1', port=5000, threaded=False)
+    import signal
+    def on_exit(signum, frame):
+        for i in range(config['num_worker']):
+            query_queues[i].put(('bye', None))
+        exit(0)
+    signal.signal(signal.SIGINT, on_exit)
 

@@ -7,4 +7,5 @@ __pycache__
 *.o
 .vscode
 *.DS_Store
-ai/logs
+ai/PRIME*
+ai/Bert*
