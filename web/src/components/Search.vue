@@ -16,11 +16,11 @@
             Current Search Type: &nbsp;
             <a-tag color="blue" style="font-size: 100%; font-family: 'Consolas', 'Courier New', monospace;" v-if="isBoolean">Boolean</a-tag>
             <a-tag color="green" style="font-size: 100%; font-family: 'Consolas', 'Courier New', monospace;" v-else>Ranked</a-tag>
-            <a-input-search class="red--text" placeholder="Enter query here..." enter-button @search="onSearch" @change="handleInput" style="width: 100%; margin-top: 20px;"/>
+            <a-input-search v-model="searchContent" class="red--text" placeholder="Enter query here..." enter-button @search="onSearch" @change="handleInput" style="width: 100%; margin-top: 20px;"/>
             </a-row>
             </a-col>
         </a-row>
-            <a-tag type="flex" justify="center" v-if="code !== 0 && code != 200" color="red">{{ code}} {{ msg }}.</a-tag>
+            <a-tag type="flex" justify="center" v-if="code !== 0 && code != 200" color="red">{{ code }} {{ msg }}.</a-tag>
         <!--<a-row type="flex" justify="center">
             <a-col :span="8">
                 <a-collapse v-model="activeKey1" style="width: 90%; margin-top: 20px; font-size: 125%;">
@@ -155,16 +155,28 @@ export default {
             type: '',
             code: 0,
             msg: 'Initialize',
-            isBoolean: false
+            isBoolean: false,
+            searchContent: '',
         }
     },
     mounted() {
         this.loading = false;
     },
+    watch: {
+        $route(to, from) {
+            console.log(to, from)
+            this.getData('query', to.query.query)
+        }
+    },
     name: 'Search',
     methods: {
         onSearch(value) {
-            this.getData('query', value)
+            this.$router.push({
+                path: '/search',
+                query: {
+                    query: value
+                }
+            })
         },
         getData(type, query) {
             this.loading = true
@@ -198,6 +210,7 @@ export default {
                 this.resultShown = []
                 this.loading = false
                 this.onLoadMore()
+                this.searchContent = ''
             })
             // var res = {
             //     "code": 200,
