@@ -21,7 +21,7 @@
         <Search></Search>
       </a-layout-content>
       <a-layout-footer style="text-align: center">
-        NewsBeing ©2023 Created by 杨宗翰, 吕优, 傅凌玥, 刘遇时 <br>
+        News Being ©2023 Created by 杨宗翰, 吕优, 傅凌玥, 刘遇时 <br>
         UI Powered by Ant Design
       </a-layout-footer>
     </a-layout>

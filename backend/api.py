@@ -280,6 +280,10 @@ def establish_db_connection(id, config, readonly = True, remove_existed = False)
 
 
 def worker(id, config, input, output):
+    import signal
+    def on_exit(signum, frame):
+        exit(0)
+    signal.signal(signal.SIGINT, on_exit)
     with establish_db_connection(id, config) as conn:
         c = conn.cursor()
         tot = fetch_num_docs(c)
@@ -293,6 +297,10 @@ def worker(id, config, input, output):
                     indices = boolean_solve(query, (c, tot))
                 elif ty == 'Ranked':
                     indices = rank_search(query, (c, tot))
+                elif ty == "bye":
+                    break
+                else:
+                    raise ValueError("Unknown task type")
                 print(f"id = {id}, query = {query}, count = {len(indices)}")
                 output.put(indices)
             except Exception as e:

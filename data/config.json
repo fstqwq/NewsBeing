@@ -5,6 +5,9 @@
     "dbpath": "data/db",
     "jsonpath" : "data/realnewslike",
     "num_worker" : 16,
+    "summary_path" : "ai/PRIMERA-multinews",
+    "qa_path" : "ai/Bert/bert-base-uncased",
+    "ai_enable" : true,
     "jsonfiles": [
         "c4-train.00000-of-00512.json",
         "c4-train.00001-of-00512.json",
