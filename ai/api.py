@@ -61,6 +61,10 @@ def ai_worker(config, input, output):
     global PAD_TOKEN_ID, DOCSEP_TOKEN_ID
     PAD_TOKEN_ID = tokenizer.pad_token_id
     DOCSEP_TOKEN_ID = tokenizer.convert_tokens_to_ids("<doc-sep>")
+    import signal
+    def on_exit(signum, frame):
+        exit(0)
+    signal.signal(signal.SIGINT, on_exit)
     while True:
         task = input.get()
         if task is None:

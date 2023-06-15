@@ -25,10 +25,7 @@
             <a-tag color="green" style="font-size: 100%; font-family: 'Consolas', 'Courier New', monospace;" v-else>Ranked</a-tag>
             </a-popover>
             </template>
-            <a-input-search placeholder="Enter query here..." enter-button @search="onSearch" @change="handleInput" style="width: 100%; margin-top: 20px;"/>
-            </a-popover>
-            </template>
-            <a-input-search placeholder="Enter query here..." enter-button @search="onSearch" @change="handleInput" style="width: 100%; margin-top: 20px;"/>
+            <a-input-search v-model="searchContent" placeholder="Enter query here..." enter-button @search="onSearch" @change="handleInput" style="width: 100%; margin-top: 20px;"/>
             </a-row>
             </a-col>
         </a-row>
@@ -177,16 +174,26 @@ export default {
             type: '',
             code: 0,
             msg: 'Initialize',
-            isBoolean: false
+            isBoolean: false,
+            searchContent: ''
         }
     },
     mounted() {
         this.loading = false
         if (typeof(this.$route.query) != 'undefined') {
+            this.searchContent = this.$route.query.query
             this.getData('query', this.$route.query.query)
         }
+        this.handleInput()
     },
     name: 'Search',
+    watch: {
+        $route(to, from) {
+            console.log(to, from)
+            this.searchContent = to.query.query
+            this.getData('query', to.query.query)
+        }
+    },
     methods: {
         onSearch(value) {
             this.$router.push({
@@ -195,6 +202,7 @@ export default {
                     query: value
                 }
             })
+            this.getData('query', value)
         },
         getData(type, query) {
             this.loading = true
@@ -304,21 +312,21 @@ export default {
             this.drawerVisible = true
             this.drawerUrl = this.result[index].url
             this.drawerTimestamp = this.result[index].timestamp
-            this.drawerText = this.result[index].text
+            this.drawerText = this.result[index].body
         },
         closeDrawer(item) {
             console.log(item)
             this.drawerVisible = false
         },
         handleInput(value) {
-            setTimeout((target) => {
-                let query = target._value
+            setTimeout(() => {
+                let query = this.searchContent
                 if (query.length > 1 && (query[0] == '(' && query[query.length - 1] == ')') || (query[0] == '[' && query[query.length - 1] == ']')) {
                     this.isBoolean = true
                 } else {
                     this.isBoolean = false
                 }
-            }, 0, value.target)
+            }, 0, value)
         },
         getHostname(url) {
             const hostname = new URL(url).hostname;

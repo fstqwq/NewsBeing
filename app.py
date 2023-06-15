@@ -133,6 +133,11 @@ def summary():
 def search():
     start = time.time()
     # ty = request.json['type']
+    if query not in request.json:
+        return {
+            "code": 400,
+            "msg": "FAIL: Empty query"
+        }
     query = request.json['query']
     # if ty not in ['Boolean', 'Ranked', 'Summary', 'QA']:
     #     return {
