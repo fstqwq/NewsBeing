@@ -160,7 +160,10 @@ export default {
         }
     },
     mounted() {
-        this.loading = false;
+        this.loading = false
+        if (typeof(this.$route.query) != 'undefined') {
+            this.getData('query', this.$route.query.query)
+        }
     },
     watch: {
         $route(to, from) {
