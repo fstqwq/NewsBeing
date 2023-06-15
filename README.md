@@ -44,10 +44,17 @@ See `web/README.md`.
 
 ### Frontend Backend Interface
 
-1. POST /search 
+1. POST `/search`
    
 Input: 
 
+```json
+{
+    "query": "QUERY_STRING"
+}
+```
+
+2. POST `/summary`
 ```json
 {
     "query": "QUERY_STRING"
@@ -69,12 +76,7 @@ Output:
             "timestamp": "TIMESTAMP_STRING"
         },
     ],
-    "summary": [ /* optional */
-        {
-            "text": "TEXT_STRING",
-            "related": ["RELATED_LINK_A", "RELATED_LINK_B"]
-        }
-    ]
+    "summary": "SUMMARY_STRING"
 }
 ```
 
@@ -85,6 +87,7 @@ Input:
 ```json
 {
     "question" : "QUESTION_STRING",
+    "context" : "CONTEXT_STRING",
     "query": "QUERY_STRING"
 }
 ```
@@ -96,12 +99,7 @@ Output:
     "code": 200, /* or others as error code */
     "msg": "OK", 
     "cnt" : 114,
-    "qa" :  [ /* optional */
-        {
-            "text": "TEXT_STRING",
-            "related": ["RELATED_LINK_A", "RELATED_LINK_B"]
-        }
-    ]
+    "answer" : "ANSWER_STRING"
 }
 ```
 
