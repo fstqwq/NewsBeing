@@ -189,7 +189,7 @@ def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> Sorted
     c, tot = cc
     result = fetch_array_by_token(token, cc)
     if len(result) == 1 and result[0] == -1:
-        result = SortedIndex([], cc[1])
+        result = SortedIndex([], cc[1], True)
     else:
         result = SortedIndex(result.copy(), cc[1]) # bug fix: reference to cache should be copied
     return result

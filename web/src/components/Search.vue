@@ -123,26 +123,26 @@
                                             size="large"
                                             @search="onQA"
                                         />
-                                        <div v-if="qa.answer"  :loading="isLoadingQA">
-                                        <a-comment>
-                                        <template #author><a>RoBERTa</a></template>
-                                            <template #avatar>
-                                                <a-avatar
-                                                    shape="square"
-                                                    size="large"
-                                                    style="verticalAlign: 'middle'">🤖</a-avatar>
-                                            </template>
-                                            <template #content>
-                                            <p>
-                                                {{ qa.answer }}
-                                            </p>
-                                            </template>
-                                            <template #datetime>
-                                            <a-tooltip>
-                                                in {{qa.time}} seconds
-                                            </a-tooltip>
-                                            </template>
-                                        </a-comment>
+                                        <div v-if="qa.answer">
+                                            <a-comment>
+                                                <template #author><a>RoBERTa</a></template>
+                                                    <template #avatar>
+                                                        <a-avatar
+                                                            shape="square"
+                                                            size="large"
+                                                            style="verticalAlign: 'middle'">🤖</a-avatar>
+                                                    </template>
+                                                    <template #content>
+                                                    <a-card :loading="isLoadingQA" style="font-size: 150%;">
+                                                        {{ qa.answer }}
+                                                    </a-card>
+                                                    </template>
+                                                    <template #datetime>
+                                                    <a-tooltip>
+                                                        in {{qa.time}} seconds
+                                                    </a-tooltip>
+                                                </template>
+                                            </a-comment>
                                         </div>
                                         </a-card>
                                         
