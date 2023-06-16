@@ -220,7 +220,7 @@ def fetch_ranked_list_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> 
     return ret
 
 @lru_cache(maxsize=512)
-def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int], target_num_results = 100) -> SortedIndex:
+def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int], target_num_results = 100):
     c, tot = cc
     result = {}
     words = make_tokens(query)
@@ -267,11 +267,12 @@ def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int], target_num_results
                 w0, c = result[doc_id]
                 result[doc_id] = (w0 + w1 * w2 * w3, c + importance)
             else: 
-                if w1 * w2 * w3 * importance > 0.01:
+                if len(result) < target_num_results or w1 * w2 * w3 * importance > 0.01:
                     result[doc_id] = (w1 * w2 * w3, importance)
     result_list = [(i[0], i[1][0] * i[1][1]) for i in result.items()]
     # weighted avg tf-idf > 0.1
-    result_list = [d for d in result_list if d[1] > 0.1]
+    if len(result_list) > target_num_results:
+        result_list = [d for d in result_list if d[1] > 0.01]
     results_numer = len(result_list)
     result_list.sort(key = lambda d: d[1], reverse = True)
     return result_list[:100], results_numer
