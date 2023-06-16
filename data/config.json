@@ -8,6 +8,7 @@
     "summary_path" : "ai/PRIMERA-multinews",
     "qa_path" : "ai/roberta-large-squad2",
     "ai_enable" : true,
+    "ai_device" : "cuda:0",
     "jsonfiles": [
         "c4-train.00000-of-00512.json",
         "c4-train.00001-of-00512.json",

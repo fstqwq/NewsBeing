@@ -18,13 +18,14 @@ def get_qa(query, pipeline):
     return response 
 
 def ai_worker(config, input, output):
+    device = config["ai_device"]
     summary_path = config["summary_path"]
     summary_tokenizer = AutoTokenizer.from_pretrained(summary_path, use_fast=True)
-    summary_pipeline = pipeline('summarization', model=summary_path, tokenizer=summary_tokenizer, device='cuda:0')
+    summary_pipeline = pipeline('summarization', model=summary_path, tokenizer=summary_tokenizer, device=device)
 
     qa_path = config["qa_path"]
     qa_tokenizer = AutoTokenizer.from_pretrained(qa_path,use_fast=True)
-    qa_pipeline = pipeline('question-answering', model=qa_path, tokenizer=qa_tokenizer, device='cuda:0')
+    qa_pipeline = pipeline('question-answering', model=qa_path, tokenizer=qa_tokenizer, device=device)
 
     import signal
     def on_exit(signum, frame):
