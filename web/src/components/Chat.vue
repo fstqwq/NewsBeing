@@ -6,7 +6,7 @@
                     <a-tag color="purple" style="font-size: 100%; font-family: Consolas, monospace;">Advanced Search</a-tag>
                 </a-row>
                 <a-row>
-                    <a-input-search v-model="searchContent" placeholder="Enter query here..." enter-button @search="onChat"  style="width: 100%; margin-top: 10px;"/>
+                    <a-input-search v-model="searchContent" placeholder="Chat here..." enter-button @search="onChat"  style="width: 100%; margin-top: 10px;"/>
                 </a-row>
             </a-col>
         </a-row>

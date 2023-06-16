@@ -145,7 +145,7 @@ def qa():
 def issue_extract(question):
     try:
         if 'ai_enable' in config and config['ai_enable']:
-            query_queues[-1].put(('qa', ('What is the query asking for?', question)))
+            query_queues[-1].put(('qa', ('What is the question asking for?', question)))
             answer = response_queues[-1].get()
             return True, answer
         else:
@@ -180,14 +180,17 @@ def chat():
     for d in result[:5]:
         url = urlparse(d['url']).hostname
         docs.append(f"Date {d['timestamp']}, from {url}: {d['text']}'")
-    context = f"You are News Being. Current Time : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n" + ('\n'.join(docs))
+    context = f"Hi. You are News Being. Current Time : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n" + ('\n'.join(docs))
     begin = time.time()
     status, answer = issue_qa(question, context) 
     end = time.time()
     if not status:
         issue_qa.cache_clear()
     print(answer)
-    answer['time'] = f"{end - begin : .4f}"
+    if isinstance(answer, dict) and 'score' in answer and answer['score'] > 1e-5:
+        answer['time'] = f"{end - begin : .4f}"
+    else:
+        answer = {"answer" : DUMMY, 'time' : f"{end - begin : .4f}"}
     return {
         "code": 200,
         "msg": "OK",
