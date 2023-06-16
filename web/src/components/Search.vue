@@ -75,8 +75,7 @@
                             slot="loadMore"
                             :style="{marginTop: '12px', height: '32px', lineHeight: '32px' }"
                         >
-                            <a-spin v-if="showLoadingMore" />
-                            <a-button v-else @click="onLoadMore">
+                            <a-button @click="onLoadMore">
                                 More...
                             </a-button>
                         </div>
@@ -212,7 +211,7 @@ export default {
     },
     mounted() {
         this.isLoadingSearch = false
-        if (typeof(this.$route.query) != 'undefined') {
+        if (typeof(this.$route.query.query) != 'undefined') {
             this.searchContent = this.$route.query.query
             this.getData('query', this.searchContent)
         }
@@ -223,6 +222,9 @@ export default {
         $route(to, from) {
             console.log(to, from)
             this.searchContent = to.query.query
+            if (typeof(this.$route.query.query) != 'undefined') {
+                this.getData('query', to.query.query)
+            }
         }
     },
     methods: {
@@ -233,7 +235,7 @@ export default {
                     query: value
                 }
             })
-            this.getData('query', value)
+            // this.getData('query', value)
         },
         getData(type, query) {
             this.isLoadingSearch = true
@@ -269,29 +271,30 @@ export default {
                 this.isLoadingSearch = false
                 this.resultShown = []
                 this.onLoadMore()
-                if (res.data.type != 'Boolean')
-                {   
-                    // summarize
-                    axios.post('http://127.0.0.1:5000/summary', input).then(res => {
-                        if (res.data.code == 200) {
-                            if (typeof(res.data.summary) == 'undefined') {
-                                this.summary = {'summary_text': '', 'time': '0'}
-                            } else {
-                                this.summary = res.data.summary
-                            }
-                        }
-                        this.isLoadingSummary = false
-                    })
-                } else {
+                // if (res.data.type != 'Boolean')
+                // {   
+                //     // summarize
+                //     axios.post('http://127.0.0.1:5000/summary', input).then(res => {
+                //         if (res.data.code == 200) {
+                //             if (typeof(res.data.summary) == 'undefined') {
+                //                 this.summary = {'summary_text': '', 'time': '0'}
+                //             } else {
+                //                 this.summary = res.data.summary
+                //             }
+                //         }
+                //         this.isLoadingSummary = false
+                //     })
+                // } else {
                     this.isLoadingSummary = false
                     this.summary = {'summary_text': 'Summarization disabled for Boolean Search.', 'time': undefined}
-                }
+                // }
             })
         },
         onLoadMore() {
             this.resultShown = (this.resultShown.length + this.pageSize <= this.result.length) ? this.result.slice(0, this.resultShown.length + this.pageSize) : this.result
             this.showLoadingMore = this.resultShown.length < this.result.length
             console.log(this.resultShown)
+            console.log(this.isLoadingSearch)
             console.log(this.showLoadingMore)
         },
         showDrawer(index) {
