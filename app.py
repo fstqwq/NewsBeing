@@ -141,6 +141,60 @@ def qa():
         "answer": answer
     }
 
+@lru_cache(maxsize=512)
+def issue_extract(question):
+    try:
+        if 'ai_enable' in config and config['ai_enable']:
+            query_queues[-1].put(('qa', ('What is the query asking for?', question)))
+            answer = response_queues[-1].get()
+            return True, answer
+        else:
+            return True, {"answer" : DUMMY}
+    except Exception as e:
+        return False, {"answer" : str(e)}
+
+
+
+@app.route('/extract', methods=['POST'])
+def extract():
+    query = request.json['query']
+    begin = time.time()
+    status, answer = issue_extract(query) 
+    end = time.time()
+    if not status:
+        issue_extract.cache_clear()
+    answer['time'] = f"{end - begin : .4f}"
+    return {
+        "code": 200,
+        "msg": "OK",
+        "keywords": answer['answer']
+    }
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    keywords = request.json['keywords']
+    question = request.json['question']
+    result = issue_query(keywords)['result']
+    print(f"result len {len(result)}")
+    docs = []
+    for d in result[:5]:
+        url = urlparse(d['url']).hostname
+        docs.append(f"Date {d['timestamp']}, from {url}: {d['text']}'")
+    context = f"You are News Being. Current Time : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n" + ('\n'.join(docs))
+    begin = time.time()
+    status, answer = issue_qa(question, context) 
+    end = time.time()
+    if not status:
+        issue_qa.cache_clear()
+    print(answer)
+    answer['time'] = f"{end - begin : .4f}"
+    return {
+        "code": 200,
+        "msg": "OK",
+        "answer": answer
+    }
+
+
 @app.route('/summary', methods=['POST'])
 def summary():
     search_result = issue_query(request.json['query']) # should be in cache
