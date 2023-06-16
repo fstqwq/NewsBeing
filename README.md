@@ -34,7 +34,9 @@ python backend/init_nltk.py
 
 See `web/README.md`.
 
+### AI Models
 
+See `ai/README.md`
 
 
 ### Database preparation
@@ -45,12 +47,28 @@ See `web/README.md`.
 ### Frontend Backend Interface
 
 1. POST `/search`
-   
-Input: 
 
 ```json
 {
     "query": "QUERY_STRING"
+}
+```
+
+Returns:
+
+```json
+{
+    "code": 200, /* or others as error code */
+    "msg": "OK", /* or error */
+    "type": "TYPE_STRING", /* Boolean or Ranked */
+    "cnt" : 114,
+    "result": [
+        {
+            "url": "URL_STRING", 
+            "text": "TEXT_STRING", 
+            "timestamp": "TIMESTAMP_STRING"
+        },
+    ]
 }
 ```
 
@@ -61,7 +79,7 @@ Input:
 }
 ```
 
-Output:
+Returns:
 
 ```json
 {
@@ -76,32 +94,58 @@ Output:
             "timestamp": "TIMESTAMP_STRING"
         },
     ],
-    "summary": "SUMMARY_STRING"
+    "summary": {
+        "summary_text" : "SUMMARY_TEXT",
+        "time" : "LATENCY_SECONDS"
+    }
 }
 ```
 
-2. POST /qa
 
-Input: 
+3. POST `/qa`
 
 ```json
 {
     "question" : "QUESTION_STRING",
-    "context" : "CONTEXT_STRING",
-    "query": "QUERY_STRING"
+    "context" : "CONTEXT_STRING"
 }
 ```
 
-Output:
+Returns:
 
 ```json
 {
     "code": 200, /* or others as error code */
-    "msg": "OK", 
-    "cnt" : 114,
-    "answer" : "ANSWER_STRING"
+    "msg": "OK",
+    "answer" : {
+        "answer" : "ANSWER_STRING",
+        "time" : "LATENCY_SECONDS"
+    }
 }
 ```
+
+4. POST `/chat`
+```json
+{
+    "keywords" : "KEYWORDS_STRING",
+    "question" : "QUESTION_STRING"
+}
+```
+
+Returns:
+
+```json
+{
+    "code": 200, /* or others as error code */
+    "msg": "OK",
+    "answer" : {
+        "answer" : "ANSWER_STRING",
+        "time" : "LATENCY_SECONDS"
+    }
+}
+```
+
+
 
 ## Copy of the Project Requirement
 

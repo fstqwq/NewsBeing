@@ -202,7 +202,7 @@ def chat():
 def summary():
     search_result = issue_query(request.json['query']) # should be in cache
     if search_result['code'] != 200 or 'result' not in search_result or (result := search_result['result']) == []:
-        search_result['summary'] = 'Nothing to summarize'
+        search_result['summary'] = {'summary_text': 'Nothing to summarize.', 'time' : '0.0000'}
         return search_result
     # parse url to the site 
     docs = [f"Answer the query: {request.json['query']}"]
