@@ -17,7 +17,7 @@ def get_qa(query, pipeline):
     }, truncation=True)
     return response 
 
-def ai_worker(config, input, output):
+def ai_worker(config, input_queue, output_queue):
     device = config["ai_device"]
     summary_path = config["summary_path"]
     summary_tokenizer = AutoTokenizer.from_pretrained(summary_path, use_fast=True)
@@ -32,35 +32,36 @@ def ai_worker(config, input, output):
         exit(0)
     signal.signal(signal.SIGINT, on_exit)
     while True:
-        task = input.get()
+        task = input_queue.get()
         if task is None:
             break
         try:
             ty, query = task
             if ty == "summary":
                 summary = get_summary(query, summary_pipeline)
-                output.put(summary)
+                output_queue.put(summary)
             elif ty == "qa":
                 answer = get_qa(query, qa_pipeline)
-                output.put(answer) 
+                output_queue.put(answer) 
             elif ty == "bye":
                 break
             else:
                 raise ValueError("Unknown task type")
         except Exception as e:
             print(f"query = {query}, error = {e}")
-            output.put(e)
+            output_queue.put(e)
 
 if __name__ == "__main__":
     config = {
         "summary_path": "PRIMERA-multinews",
-        "qa_path" : "roberta-base-squad2"
+        "qa_path" : "roberta-base-squad2",
+        "ai_device" : "cuda:0"
     }
     from multiprocessing import Manager, Process
     manager = Manager()
-    input = manager.Queue()
-    output = manager.Queue()
-    process = Process(target=ai_worker, args=(config, input, output))        
+    input_queue = manager.Queue()
+    output_queue = manager.Queue()
+    process = Process(target=ai_worker, args=(config, input_queue, output_queue))        
     process.start()
 
     docs = [
@@ -124,9 +125,9 @@ And I hope this works out
 But you know how much you broke me apart
 I'm done with you, I'm ignoring you
 I don't wanna know"""]
-    input.put(("summary", docs))
-    print(output.get())
-    # bug : too long input
+    input_queue.put(("summary", docs))
+    print(output_queue.get())
+    # bug : too long input_queue
     docs = ["""
     'Microsoft and the Xbox platform had to make a statement at this year’s E3. The show we saw on June 10, however, has us very excited for the future of Xbox. In addition to announcing several new exclusives from fan-favorite series, Microsoft has significantly bolstered its internal development studios so it can release great exclusives on a regular basis. Here are the announcements Microsoft made during the Xbox E3 2018 press conference.\nHead of Xbox Phil Spencer revealed the commitment Microsoft is making to first-party exclusive games during the press conference. Alongside the new studio The Initiative, based in Santa Monica, Microsoft has acquired State of Decay 2 developer Undead Labs, Forza Horizon 4 studio Playground Games, Hellblade studio Ninja Thoery, and We Happy Few studio Compulsion Games.\nSpeaking of We Happy Few, it’s almost here! The game launches on August 10 for Xbox One, PC, and PlayStation 4.\nMicrosoft took a moment to touch on new cloud game streaming options, as well, which the company plans to bring to a variety of less powerful devices in the future. Phil Spencer also revealed that system architects have begun work on the next Xbox, but he didn’t elaborate on what form that will take.\nWe predicted Microsoft and 343 Studios could announce the sixth Halo game during the press conference, but it won’t be called “Halo 6.” Halo Infinite is the next chapter of the story, once again following Master Chief. It’s being created with the new “Slipspace Engine,” designed in-house for future Halo games, and will release on both Xbox One and Windows 10.\nOur first look at Halo Infinite didn’t give us too many details on the story or characters, but we caught a glimpse of several forms of wildlife including deer and rhinocerous-like creatures. We also saw the famous Warthog vehicle, as well as a titular Halo ring – something the Legendary ending of Halo 5 alluded to.\nThe Coalition is working on the next chapter in the Gears of War saga, which was only called Gears 5 in its announcement trailer. The game will star Kait Diaz rather than JD Fenix this time around, 
 though JD, Marcus, and Del all return.\nThe trailer showed off a variety of environments, including areas filled with trees, frozen lakes, ravines, and one section covered in red sand. Enemies also show variety, 
@@ -161,6 +162,10 @@ Developed by Square Enix, Kingdom Hearts III is set to release for PS4 and Xbox 
 II, which will release exclusively on the PS4 but doesn\'t yet have a release date.\nThe latest installment of EA Sports\' annual football game franchise, Madden NFL 19 will be available for PX, PS4 and Xbox One 
 on August 10, 2018.\nThe Metro franchise returns with Metro: Exodus, "an epic, story-driven first-person shooter from 4A Games that blends deadly combat and stealth with exploration and survival horror." Metro: Exodus will be available for PC, PS4 and Xbox One on February 22, 2019.'
     """]
-    input.put(("summary", docs))
-    print(output.get())
-    input.put(("bye", None))
+    input_queue.put(("summary", docs))
+    print(output_queue.get())
+    while True:
+        a = input("Enter a sentence: ")
+        input_queue.put(("summary", [a]))
+        print(output_queue.get())
+    input_queue.put(("bye", None))

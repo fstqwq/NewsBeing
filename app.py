@@ -11,6 +11,8 @@ from config import *
 from backend.parse import highlight_doc
 from ai.api import *
 
+from urllib.parse import urlparse
+
 app = Flask(__name__)
 CORS(app, resources=r'*')
 
@@ -61,15 +63,17 @@ def issue_query(query : str):
         timecurrent = "2022-06-16T12:00:00Z"
         format_str = '%Y-%m-%dT%H:%M:%SZ'
         nowtime = datetime.strptime(timecurrent, format_str).timestamp()
+        target_num_results = config['target_num_results']
         for i in range(config['num_worker']):
-            indices = response_queues[i].get()
-            if isinstance(indices, Exception):
-                failed = indices
+            result = response_queues[i].get()
+            if isinstance(result, Exception):
+                failed = result
                 continue
             elif failed is not None:
                 continue
-            tot += len(indices)
-            results.extend([(i, x) for x in indices[:100]])
+            indices, count = result
+            tot += count
+            results.extend([(i, x) for x in indices])
         if failed is not None:
             return {
                 "code": 400,
@@ -143,9 +147,13 @@ def summary():
     if search_result['code'] != 200 or 'result' not in search_result or (result := search_result['result']) == []:
         search_result['summary'] = 'Nothing to summarize'
         return search_result
-    docs = [x['text'] for x in result]
+    # parse url to the site 
+    docs = [f"Answer the query: {request.json['query']}"]
+    for d in result[:5]:
+        url = urlparse(d['url']).hostname
+        docs.append(f"Date {d['timestamp']}, from {url}: {d['text']}'")
     begin = time.time()
-    status, summary = issue_summary(tuple(docs[:5]))
+    status, summary = issue_summary(tuple(docs))
     end = time.time()
     if not status:
         issue_summary.cache_clear()

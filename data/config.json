@@ -5,6 +5,7 @@
     "dbpath": "data/db",
     "jsonpath" : "data/realnewslike",
     "num_worker" : 16,
+    "target_num_results": 100,
     "summary_path" : "ai/PRIMERA-multinews",
     "qa_path" : "ai/roberta-large-squad2",
     "ai_enable" : true,

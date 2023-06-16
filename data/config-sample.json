@@ -5,6 +5,7 @@
     "dbpath": "data/db",
     "jsonpath" : "data/sample",
     "num_worker" : 1,
+    "target_num_results": 100,
     "jsonfiles": [
         "c4-validation.00000-of-00001.json"
     ]

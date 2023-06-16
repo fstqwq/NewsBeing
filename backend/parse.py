@@ -18,11 +18,13 @@ def lemmatize(word):
 
 def make_tokens(text):
     words = word_tokenize(text.lower())
-    words = [w for w in words if w not in stopword_set]
+    words = [w for w in words if w.isascii() and w not in stopword_set]
     words = [w for w in words if w not in punctuations]
     return [lemmatize(w) for w in words]
 
 def make_token(token):
+    if not token.isascii():
+        return ''
     token = token.lower()
     if token in stopword_set or token in punctuations or len(token) == 0:
         return ''

@@ -121,7 +121,7 @@
                                             size="large"
                                             @search="onQA"
                                         />
-                                        <div v-if="qa.answer">
+                                        <div v-if="qa.answer"  :loading="isLoadingQA">
                                         <a-comment>
                                         <template #author><a>RoBERTa</a></template>
                                             <template #avatar>
@@ -169,7 +169,7 @@
                     <p>
                         {{summary.summary_text}}
                     </p>
-                    <p style="text-align: end; color: gray;">
+                    <p style="text-align: end; color: gray;" v-if="summary.time">
                         Generated in {{ summary.time }} second.
                     </p>
                 </a-card>
@@ -269,7 +269,7 @@ export default {
                 this.isLoadingSearch = false
                 this.resultShown = []
                 this.onLoadMore()
-                // if (res.data.type != 'Boolean')
+                if (res.data.type != 'Boolean')
                 {   
                     // summarize
                     axios.post('http://127.0.0.1:5000/summary', input).then(res => {
@@ -282,14 +282,17 @@ export default {
                         }
                         this.isLoadingSummary = false
                     })
+                } else {
+                    this.isLoadingSummary = false
+                    this.summary = {'summary_text': 'Summarization disabled for Boolean Search.', 'time': undefined}
                 }
             })
         },
         onLoadMore() {
-            console.log(this.resultShown)
-            console.log(this.showLoadingMore)
             this.resultShown = (this.resultShown.length + this.pageSize <= this.result.length) ? this.result.slice(0, this.resultShown.length + this.pageSize) : this.result
             this.showLoadingMore = this.resultShown.length < this.result.length
+            console.log(this.resultShown)
+            console.log(this.showLoadingMore)
         },
         showDrawer(index) {
             this.drawerVisible = true
@@ -300,7 +303,7 @@ export default {
         },
         onQA() {
             this.isLoadingQA = true
-            var input = {'question': this.QAContent, 'context' : "url: " + this.drawerUrl + "timestamp: " + this.drawerTimestamp + this.drawerText}
+            var input = {'question': this.QAContent, 'context' : "Link: " + this.drawerUrl + "Time: " + this.drawerTimestamp + this.drawerText}
             axios.post('http://127.0.0.1:5000/qa', input).then(res => {
                 this.isLoadingQA = false
                 if (typeof(res.data.answer) == 'undefined') {

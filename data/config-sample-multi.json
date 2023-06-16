@@ -5,6 +5,7 @@
     "dbpath": "data/db",
     "jsonpath" : "data/sample-multi",
     "num_worker" : 4,
+    "target_num_results" : 100,
     "jsonfiles": [
         "c4-train.00000-of-00512.json",
         "c4-train.00001-of-00512.json",

@@ -220,7 +220,7 @@ def fetch_ranked_list_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> 
     return ret
 
 @lru_cache(maxsize=512)
-def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
+def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int], target_num_results = 100) -> SortedIndex:
     c, tot = cc
     result = {}
     words = make_tokens(query)
@@ -233,8 +233,15 @@ def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
             dic[word] = dic[word] + 1
         cnt = cnt + 1 
  
-    tokens = set(words)
-    for token in tokens:
+    visited = set()
+    sum_importance = 0
+    for i, token in enumerate(words):
+        if token in visited:
+            continue
+        visited.add(token)
+        importance = 1.0 / (i + 1)
+        print(token, importance)
+        sum_importance += importance
         qf = dic[token] / cnt
         ret = fetch_ranked_list_by_token(token, cc) 
         doc_id_arr, tf_arr = [], []
@@ -250,17 +257,24 @@ def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
         # df = len(tmp)
         df = len(doc_id_arr)
         w1 = qf / (qf + 1.2)
-        w3 = math.log2((tot - df + 1e-9) / (df + 1e-9))
+        w3 = math.log2((tot - df + 1) / (df + 1))
         print(token, df, qf)
-        for i in range(len(doc_id_arr)):
-            doc_id, tf = doc_id_arr[i], tf_arr[i]
+        for doci in range(len(doc_id_arr)):
+            doc_id, tf = doc_id_arr[doci], tf_arr[doci]
+            tf = min(0.1, tf)
             w2 = tf * 1.5 / (tf  + 1.5)
             if (doc_id in result):
-                result[doc_id] = result[doc_id] + w1 * w2 * w3
+                w0, c = result[doc_id]
+                result[doc_id] = (w0 + w1 * w2 * w3, c + importance)
             else: 
-                result[doc_id] = w1 * w2 * w3    
-    result1 = sorted(result.items(), key = lambda d: d[1], reverse = True)
-    return result1
+                if w1 * w2 * w3 * importance > 0.01:
+                    result[doc_id] = (w1 * w2 * w3, importance)
+    result_list = [(i[0], i[1][0] * i[1][1]) for i in result.items()]
+    # weighted avg tf-idf > 0.1
+    result_list = [d for d in result_list if d[1] > 0.1]
+    results_numer = len(result_list)
+    result_list.sort(key = lambda d: d[1], reverse = True)
+    return result_list[:100], results_numer
 
 
 def establish_db_connection(id, config, readonly = True, remove_existed = False):
@@ -294,15 +308,15 @@ def worker(id, config, input, output):
             try:
                 ty, query = task
                 if ty == 'Boolean':
-                    indices = boolean_solve(query, (c, tot))
+                    result = boolean_solve(query, (c, tot))
+                    print(f"id = {id}, query = {query}, count = {len(result)}")
                 elif ty == 'Ranked':
-                    indices = rank_search(query, (c, tot))
+                    result = rank_search(query, (c, tot), config['target_num_results'])
                 elif ty == "bye":
                     break
                 else:
                     raise ValueError("Unknown task type")
-                print(f"id = {id}, query = {query}, count = {len(indices)}")
-                output.put(indices)
+                output.put(result)
             except Exception as e:
                 print(f"id = {id}, query = {query}, error = {e}")
                 output.put(e)
