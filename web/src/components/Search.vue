@@ -21,6 +21,14 @@
                     <a-input-search v-model="searchContent" placeholder="Enter query here..." enter-button @search="onSearch" @change="handleInput" style="width: 100%; margin-top: 10px;"/>
                 </a-row>
             </a-col>
+            <a-col :span="12">
+                <a-row type="flex" justify="end" style="margin-top: 30px;">
+                    <a-avatar :src="require('../assets/head1.jpg')" />
+                    <a-avatar :src="require('../assets/head2.jpg')" />
+                    <a-avatar :src="require('../assets/head3.jpg')" />
+                    <a-avatar :src="require('../assets/head4.jpg')" />
+                </a-row>
+            </a-col>
         </a-row>
         <a-row type="flex" justify="left" v-if="code !== 0 && code != 200">
             <a-col :span="12">

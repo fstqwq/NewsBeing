@@ -89,7 +89,7 @@ from typing import Dict, List
 def highlight_doc(doc_dict : Dict, query : str):
 
     keywords = set(lemmatize(i) for i in word_tokenize(query.lower()) if len(i) > 0 and i not in punctuations)
-
+    true_keywords = set(lemmatize(i) for i in word_tokenize(query.lower()) if len(i) > 0 and i not in punctuations and i not in stopword_set)
     doc, tag, text = Doc().tagtext()
     bdoc, btag, btext = Doc().tagtext()
     lines = doc_dict['text'].split('\n')
@@ -104,8 +104,9 @@ def highlight_doc(doc_dict : Dict, query : str):
                         btext('...')
                         bcount = 0
                 filterd_token = lemmatize(''.join([i for i in token.lower() if i not in punctuations]))
-                if filterd_token in keywords:
+                if filterd_token in true_keywords:
                     has_highlight = True
+                if filterd_token in keywords:
                     if bcount < 200:
                         with btag('mark'):
                             btext(token)
@@ -120,15 +121,6 @@ def highlight_doc(doc_dict : Dict, query : str):
                     text(token)
                     text(' ')
                 bcount += 1
-        
-        if not has_highlight:
-            bdoc, btag, btext = Doc().tagtext() # clear
-            if bcount != 0:
-                bcount = 0
-                btext('...')
-        
-        
-        flag = True
     if bcount > 200:
         btext('...')
     doc_dict['body'] = doc.getvalue()

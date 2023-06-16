@@ -51,7 +51,7 @@
         </a-row>
         <a-row type="flex" justify="center">
             <a-col :span="16" justify="center">
-                <a-row type="flex" justify="center" v-if="code === 200">Search finished in {{ latency }} second.</a-row>
+                <a-row type="flex" justify="center" v-if="searchCode === 200">Search finished in {{ latency }} second.</a-row>
                 <a-row type="flex" justify="center">
                     <a-list
                         class="demo-loadmore-list"
@@ -181,6 +181,7 @@ export default {
             latency: 0,
             type: '',
             code: 0,
+            searchCode: 0,
             msg: 'Initialize',
             isBoolean: false,
             isChatKeywordsLoading: false,
@@ -236,6 +237,7 @@ export default {
                     this.chat.keywords = res.data.keywords
                     input = {'query' : this.chat.keywords} 
                     axios.post('http://127.0.0.1:5000/search', input).then(res=> {
+                        this.searchCode = res.data.code
                         this.result = res.data.result.slice(0, 5)
                         this.latency = res.data.time
                         this.type = res.data.type
