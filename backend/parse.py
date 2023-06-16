@@ -30,8 +30,6 @@ def make_token(token):
         return ''
     return lemmatize(token)
 
-def split_tokens(expr : str):
-    return re.findall(r'\[|\]|\(|\)|\w+', expr)
 
 op_prec = {
     'AND': 2,
@@ -42,8 +40,8 @@ op_prec = {
 }
 
 def boolean_parse(expr: str):
-    tokens = split_tokens(expr)
-    if 'AND' in tokens or 'OR' in tokens or 'NOT' in tokens or '(' in tokens or ')' in tokens:
+    tokens = word_tokenize(expr)
+    if '(' in tokens and ')' in tokens:
         operands = []
         ops = []
         for token in tokens:
@@ -103,7 +101,7 @@ def highlight_doc(doc_dict : Dict, query : str):
                     if bcount != 0:
                         btext('...')
                         bcount = 0
-                filterd_token = lemmatize(''.join([i for i in token.lower() if i not in punctuations]))
+                filterd_token = lemmatize(''.join([i for i in token.lower() if i.isascii()]))
                 if filterd_token in true_keywords:
                     has_highlight = True
                 if filterd_token in keywords:
@@ -124,5 +122,8 @@ def highlight_doc(doc_dict : Dict, query : str):
     if bcount > 200:
         btext('...')
     doc_dict['body'] = doc.getvalue()
-    doc_dict['brief'] = bdoc.getvalue()
+    brief = bdoc.getvalue()
+    if not has_highlight:
+        brief = doc_dict['text'][:500] + ('' if len(doc_dict['text']) <= 500 else '...')
+    doc_dict['brief'] = brief
     return doc_dict
