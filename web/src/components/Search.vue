@@ -276,23 +276,23 @@ export default {
                 this.isLoadingSearch = false
                 this.resultShown = []
                 this.onLoadMore()
-                // if (res.data.type != 'Boolean')
-                // {   
-                //     // summarize
-                //     axios.post('http://127.0.0.1:5000/summary', input).then(res => {
-                //         if (res.data.code == 200) {
-                //             if (typeof(res.data.summary) == 'undefined') {
-                //                 this.summary = {'summary_text': '', 'time': '0'}
-                //             } else {
-                //                 this.summary = res.data.summary
-                //             }
-                //         }
-                //         this.isLoadingSummary = false
-                //     })
-                // } else {
+                if (res.data.type != 'Boolean')
+                {   
+                    // summarize
+                    axios.post('http://127.0.0.1:5000/summary', input).then(res => {
+                        if (res.data.code == 200) {
+                            if (typeof(res.data.summary) == 'undefined') {
+                                this.summary = {'summary_text': '', 'time': '0'}
+                            } else {
+                                this.summary = res.data.summary
+                            }
+                        }
+                        this.isLoadingSummary = false
+                    })
+                } else {
                     this.isLoadingSummary = false
                     this.summary = {'summary_text': 'Summarization disabled for Boolean Search.', 'time': undefined}
-                // }
+                }
             })
         },
         onLoadMore() {
