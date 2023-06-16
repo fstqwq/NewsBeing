@@ -137,11 +137,11 @@ def preprocess(config):
     print("End time: " + str(datetime.now()))
 
 @lru_cache(maxsize=512)
-def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
+def fetch_array_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> List:
     c, tot = cc
     token = make_token(token)
     if token == '':
-        return SortedIndex([], tot, True)
+        return [-1]
     begin = time.time()
     c.execute("SELECT doc_id, version FROM inverted_index WHERE token=?", (token,))
     ret = c.fetchall()
@@ -154,11 +154,11 @@ def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> Sorted
         # for i in range(1, len(arr)):
         #     arr[i] += arr[i - 1] # Difference
         doc_id_arr.extend(arr) # Compressed
-    result = SortedIndex(doc_id_arr, tot, False)
     end = time.time()
-    print(f"DB exec ({token}) time: {end - begin}, db time = {mid - begin}, count = {len(result)}")
-    return result
+    print(f"DB exec ({token}) time: {end - begin}, db time = {mid - begin}, count = {len(doc_id_arr)}")
+    return doc_id_arr
 
+@lru_cache(maxsize=512)
 def fetch_doc(id : int, c : sqlite3.Cursor) -> Tuple[str, str, int]:
     c.execute("SELECT url, text, timestamp FROM documents WHERE id=?", (id,))
     return c.fetchone()
@@ -185,6 +185,15 @@ def fetch_doc_global_id(global_id, config : dict) -> Tuple[str, str, int]:
     return fetch_doc_global_id_dbfile(global_id, dbfile)
 
 
+def fetch_index_by_token(token : str, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
+    c, tot = cc
+    result = fetch_array_by_token(token, cc)
+    if len(result) == 1 and result[0] == -1:
+        result = SortedIndex([], cc[1])
+    else:
+        result = SortedIndex(result.copy(), cc[1]) # bug fix: reference to cache should be copied
+    return result
+    
 def fetch_tree(expr, cc : Tuple[sqlite3.Cursor, int]) -> SortedIndex:
     """
     Fetch the tree of the given expression

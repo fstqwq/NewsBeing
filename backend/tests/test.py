@@ -47,7 +47,8 @@ if __name__ == "__main__":
     # print(boolean_solve("rent car discount", cc).extractall())
     # print(fetch_doc(boolean_solve("rent car discount", cc).extractall()[0], c))
     start = time.time()
-    indices = boolean_solve('(car AND buy AND NOT rent)', cc)
+    # indices = boolean_solve('(car AND buy AND NOT rent)', cc)
+    indices = boolean_solve('test AND NOT test', cc)
     #print(indices)
     #print(indices.extract(10))
     results = [(0, x) for x in indices.extract(10)]
@@ -61,29 +62,5 @@ if __name__ == "__main__":
     global_id = (0, 18)
     url, text, timestamp = fetch_doc_global_id(global_id, config)
     print(f"{global_id} : {url} : {datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y %H:%M:%S')} : {text[:200]}")
-
-    #test rank search 
-    print('======Test Rank Search======')
-    start = time.time()
-    query = "fuck you"
-    result = rank_search(query, cc)
-    sorted_results = [(0, x) for x in result[:10]]
-    timecurrent = "2022-06-16T12:00:00Z"
-    format_str = '%Y-%m-%dT%H:%M:%SZ'
-    nowtime = datetime.strptime(timecurrent, format_str).timestamp()
-    final_result = {}
-    freshness = {}
-    for group, (doc_id, score) in sorted_results[:10]:
-            doc = fetch_doc_global_id((group, doc_id), config)
-            final_result[(group, doc_id)] = doc
-            freshness[(group, doc_id)] = math.log2(score) + 0.5 / (nowtime - doc[2])
-    sorted_results = sorted(freshness.items(), key = lambda d: d[1], reverse = True)
-    #result_docs = [doc_to_dict(final_result[(group, doc_id)]) for (group, doc_id), score in sorted_results[:10]]    
-    #print(result_docs)
-    #print(type(result))
-    for rank, (doc_id, score) in enumerate(result[:5]):
-        url, text, timestamp = fetch_doc(doc_id, c)
-        print(f"{rank}. {doc_id} : {url} : {datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y %H:%M:%S')} : {text[:200]}")
-    print('======Rank Search {}s======'.format(time.time() - start))
 
     conn.close()
