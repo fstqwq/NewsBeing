@@ -278,7 +278,7 @@ def rank_search(query : str, cc : Tuple[sqlite3.Cursor, int], target_num_results
             else: 
                 if len(result) < target_num_results or w1 * w2 * w3 * importance > 0.01:
                     result[doc_id] = (w1 * w2 * w3, importance)
-    result_list = [(i[0], i[1][0] * i[1][1]) for i in result.items()]
+    result_list = [(i[0], (i[1][0] + i[1][1]) * i[1][1]) for i in result.items()]
     # weighted avg tf-idf > 0.1
     if len(result_list) > target_num_results:
         result_list = [d for d in result_list if d[1] > 0.01]

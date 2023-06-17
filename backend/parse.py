@@ -102,9 +102,10 @@ def highlight_doc(doc_dict : Dict, query : str):
                         btext('...')
                         bcount = 0
                 filterd_token = lemmatize(''.join([i for i in token.lower() if i.isascii()]))
-                if filterd_token in true_keywords:
+                filterd_token_2 = lemmatize(''.join([i for i in token.lower() if i.isascii() and i not in punctuations]))
+                if filterd_token in true_keywords or filterd_token_2 in true_keywords:
                     has_highlight = True
-                if filterd_token in keywords:
+                if filterd_token in keywords or filterd_token_2 in keywords:
                     if bcount < 200:
                         with btag('mark'):
                             btext(token)
