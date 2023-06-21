@@ -16,15 +16,14 @@ If you want to query these three keywords, use the lowercase form. Example: `(ca
 
 ### Q&A
 
-TBD
-
+Use Web GUI.
 
 ## Requirement
 
 
 ### Backend
 
-`Python`: 3.11
+`Python`: >= 3.11
 ```
 pip install -r requirements.txt
 python backend/init_nltk.py
